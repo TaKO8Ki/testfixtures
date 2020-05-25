@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 sqlx = { version = "0.3", features = [ "mysql" ] }
+yaml-rust = "0.4"
+anyhow = "1.0"
