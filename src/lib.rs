@@ -68,25 +68,16 @@ impl Loader {
     }
 
     pub async fn load(self) -> anyhow::Result<()> {
-        sqlx::query!(
-            r#"
-    INSERT INTO todos ( description )
-    VALUES ( ? )
-            "#,
-            "hfoae"
-        )
-        .execute(&self.db.unwrap())
-        .await?;
+        let query = r#"
+        INSERT INTO todos ( description )
+        VALUES ( ? )
+                "#;
+        sqlx::query(query).execute(&self.db.unwrap()).await?;
         // for file in self.fixtures_files {
         //  ;   .unwrap();
         // }
         Ok(())
     }
-
-    // pub fn database(mut self, db: MySqlPool) -> Self {
-    //     self.db = Some(db);
-    //     self
-    // }
 
     pub fn database(db: MySqlPool) -> Box<dyn FnOnce(&mut Loader)> {
         Box::new(|loader| loader.db = Some(db))
@@ -146,8 +137,8 @@ impl Loader {
                         let (sql, values) =
                             self.build_insert_sql(&self.fixtures_files[index], record);
                         self.fixtures_files[index].insert_sqls.push(InsertSQL {
-                            sql: sql.to_string(),
-                            params: values.to_vec(),
+                            sql: sql,
+                            params: values,
                         });
                     }
                 }
@@ -157,14 +148,40 @@ impl Loader {
     }
 
     fn build_insert_sql(&self, file: &FixtureFile, record: &Yaml) -> (String, Vec<String>) {
+        let mut sql_columns = vec![];
+        let mut sql_values = vec![];
+        let mut values = vec![];
         match &record {
             Yaml::Hash(hash) => {
-                for (i, v) in hash {
-                    println!("{:?}: {:?}", i, v);
+                for (key, value) in hash {
+                    let value = match value {
+                        Yaml::String(v) => format!(r#""{}""#, v.to_string()),
+                        Yaml::Integer(v) => v.to_string(),
+                        others => "".to_string(),
+                    };
+                    let key = match key {
+                        Yaml::String(k) => k.to_string(),
+                        Yaml::Integer(k) => k.to_string(),
+                        others => "".to_string(),
+                    };
+                    sql_columns.push(key);
+                    if value.starts_with("RAW=") {
+                        sql_values.push(value.replace("RAW=", ""));
+                        continue;
+                    }
+
+                    sql_values.push("?".to_string());
+                    values.push(value);
                 }
             }
             others => (),
         }
-        ("feh".to_string(), vec!["foewaf".to_string()])
+        let sql_str = format!(
+            "INSERT INTO {} ({}) VALUES ({})",
+            "todos",
+            sql_columns.join(", "),
+            values.join(", "),
+        );
+        (sql_str, values)
     }
 }
