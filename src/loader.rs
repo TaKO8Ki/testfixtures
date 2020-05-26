@@ -34,6 +34,11 @@ pub struct InsertSQL {
     pub params: Vec<String>,
 }
 
+#[derive(Debug)]
+pub enum Dialect {
+    MySql,
+}
+
 impl Default for Loader {
     fn default() -> Loader {
         Loader {
@@ -50,11 +55,6 @@ impl Default for Loader {
             template_data: None,
         }
     }
-}
-
-#[derive(Debug)]
-pub enum Dialect {
-    MySql,
 }
 
 impl Loader {
