@@ -142,7 +142,7 @@ impl Loader {
                         });
                     }
                 }
-                others => (),
+                _ => (),
             }
         }
     }
@@ -157,12 +157,12 @@ impl Loader {
                     let value = match value {
                         Yaml::String(v) => format!(r#""{}""#, v.to_string()),
                         Yaml::Integer(v) => v.to_string(),
-                        others => "".to_string(),
+                        _ => "".to_string(),
                     };
                     let key = match key {
                         Yaml::String(k) => k.to_string(),
                         Yaml::Integer(k) => k.to_string(),
-                        others => "".to_string(),
+                        _ => "".to_string(),
                     };
                     sql_columns.push(key);
                     if value.starts_with("RAW=") {
@@ -174,7 +174,7 @@ impl Loader {
                     values.push(value);
                 }
             }
-            others => (),
+            _ => (),
         }
         let sql_str = format!(
             "INSERT INTO {} ({}) VALUES ({})",
