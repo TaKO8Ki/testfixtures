@@ -96,6 +96,11 @@ impl Loader {
         Box::new(|loader| loader.helper = Some(dialect))
     }
 
+    pub fn location(location: &str) -> Box<dyn FnOnce(&mut Loader)> {
+        let location = location.to_string();
+        Box::new(|loader| loader.location = Some(location))
+    }
+
     // pub fn directory(mut self, directory: String) -> Self {
     //     let fixtures = self.fixtures_from_dir(directory);
     //     self.fixturesFiles = Some(fixtures);
