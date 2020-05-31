@@ -1,3 +1,5 @@
+use super::database::Database;
+use super::mysql;
 use sqlx::MySqlPool;
 use std::fs::File;
 use std::io::prelude::*;
@@ -5,10 +7,9 @@ use std::io::BufReader;
 use std::path::Path;
 use yaml_rust::{Yaml, YamlLoader};
 
-#[derive(Debug)]
 pub struct Loader {
     pub db: Option<MySqlPool>,
-    pub helper: Option<Dialect>,
+    pub helper: Option<Box<dyn Database>>,
     pub fixtures_files: Vec<FixtureFile>,
     pub skip_test_database_check: Option<bool>,
     pub location: Option<String>,
@@ -39,8 +40,8 @@ pub enum Dialect {
     MySql,
 }
 
-impl Default for Loader {
-    fn default() -> Loader {
+impl<'a> Default for Loader {
+    fn default() -> Self {
         Loader {
             db: None,
             helper: None,
@@ -58,37 +59,41 @@ impl Default for Loader {
 }
 
 impl Loader {
-    pub fn new(option: Vec<Box<dyn FnOnce(&mut Loader)>>) -> Loader {
-        let mut loader: Loader = Default::default();
+    pub async fn new(option: Vec<Box<dyn FnOnce(&mut Loader)>>) -> anyhow::Result<Loader> {
+        let mut loader = Self::default();
         for o in option {
             o(&mut loader);
         }
         loader.build_insert_sqls();
         loader
+            .helper
+            .as_mut()
+            .unwrap()
+            .init(loader.db.as_ref().unwrap())
+            .await?;
+        Ok(loader)
     }
 
     pub async fn load(self) -> anyhow::Result<()> {
-        let query = r#"
-        INSERT INTO todos ( description )
-        VALUES ( ? )
-                "#;
-        sqlx::query(query).execute(&self.db.unwrap()).await?;
-        // for file in self.fixtures_files {
-        //  ;   .unwrap();
-        // }
+        let db = self.db.unwrap();
+        for file in self.fixtures_files {
+            for i in file.insert_sqls {
+                sqlx::query(i.sql.as_str()).execute(&db).await?;
+            }
+        }
         Ok(())
     }
 
     pub fn database(db: MySqlPool) -> Box<dyn FnOnce(&mut Loader)> {
-        Box::new(|loader| loader.db = Some(db))
+        Box::new(move |loader| loader.db = Some(db.clone()))
     }
 
     pub fn dialect(dialect: &str) -> Box<dyn FnOnce(&mut Loader)> {
         let dialect = match dialect {
-            "mysql" | "mariadb" => Some(Dialect::MySql),
-            _ => None,
+            "mysql" | "mariadb" => Box::new(mysql::MySQL::default()),
+            _ => Box::new(mysql::MySQL { tables: vec![] }),
         };
-        Box::new(|loader| loader.helper = dialect)
+        Box::new(|loader| loader.helper = Some(dialect))
     }
 
     // pub fn directory(mut self, directory: String) -> Self {
@@ -98,7 +103,7 @@ impl Loader {
     // }
 
     pub fn files(files: Vec<&str>) -> Box<dyn FnOnce(&mut Loader)> {
-        let fixtures = Loader::fixtures_from_files(files);
+        let fixtures = Self::fixtures_from_files(files);
         Box::new(|loader| loader.fixtures_files = fixtures)
     }
 
@@ -178,10 +183,32 @@ impl Loader {
         }
         let sql_str = format!(
             "INSERT INTO {} ({}) VALUES ({})",
-            "todos",
+            file.file_stem(),
             sql_columns.join(", "),
             values.join(", "),
         );
         (sql_str, values)
+    }
+
+    // fn ensure_test_database(self) {
+    //     let dbName = self.helper.database_name(self.db);
+    //     if err != nil {
+    //         return err
+    //     }
+    //     if !testDatabaseRegexp.MatchString(dbName) {
+    //         return fmt.Errorf(`testfixtures: database "%s" does not appear to be a test database`, dbName)
+    //     }
+    //     return nil
+    // }
+}
+
+impl FixtureFile {
+    fn file_stem(&self) -> String {
+        Path::new(self.file_name.as_str())
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
     }
 }
