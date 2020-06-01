@@ -1076,6 +1076,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.1.29",
+ "regex",
  "sqlx",
  "yaml-rust",
 ]
