@@ -1,5 +1,6 @@
 use super::database::Database;
 use async_trait::async_trait;
+use sqlx::mysql::MySqlQueryAs;
 use sqlx::MySqlPool;
 
 #[derive(Debug)]
@@ -21,11 +22,11 @@ impl Database for MySQL {
         Ok(())
     }
 
-    // async fn database_name(self, db: MySqlPool) -> anyhow::Result<()> {
-    //     let db_name = "";
-    //     let recs = sqlx::query!("SELECT * from todos;").fetch_all(db).await?;
-    //     Ok(recs)
-    // }
+    async fn database_name(&self, db: &MySqlPool) -> anyhow::Result<String> {
+        let db_name = "";
+        let rec: (String,) = sqlx::query_as("SELECT DATABASE()").fetch_one(db).await?;
+        Ok(rec.0)
+    }
 
     async fn table_names(&self, db: &MySqlPool) -> anyhow::Result<Vec<String>> {
         let tables = sqlx::query!(
