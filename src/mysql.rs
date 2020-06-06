@@ -1,9 +1,6 @@
 use crate::database::DB;
 use async_trait::async_trait;
-use sqlx::{Connect, Connection, Database, Pool, Transaction};
-use std::future::Future;
-use std::pin::Pin;
-use std::thread;
+use sqlx::{Connect, Connection, Database, Pool, Query};
 
 #[derive(Debug)]
 pub struct MySQL {
@@ -17,13 +14,10 @@ impl Default for MySQL {
 }
 
 #[async_trait]
-impl<'a, T, C> DB<T, C> for MySQL
+impl<T, C> DB<T, C> for MySQL
 where
     T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect + Sync + Send,
-    // F: FnOnce(
-    //     &mut Transaction<C>,
-    // ) -> Pin<Box<(dyn Future<Output = anyhow::Result<()>> + Send + 'a)>>,
+    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
     async fn init(&mut self, db: &Pool<C>) -> anyhow::Result<()> {
         self.tables = self.table_names(db).await?;
@@ -31,47 +25,40 @@ where
     }
 
     async fn database_name(&self, db: &Pool<C>) -> anyhow::Result<String> {
-        // let rec: (String,) = sqlx::query_as("SELECT DATABASE()").fetch_one(db).await?;
-        Ok("fwoaef".to_string())
+        // let rec: (String,) = sqlx::query!("SELECT DATABASE()").fetch_one(db).await?;
+        // Ok(rec.0)
+        Ok("fizz".to_string())
     }
 
-    async fn table_names(&self, db: &Pool<C>) -> anyhow::Result<Vec<String>> {
-        self.database_name(db);
-        //     let tables = sqlx::query!(
-        //         r#"
+    async fn table_names(&self, pool: &Pool<C>) -> anyhow::Result<Vec<String>> {
+        // let tables = sqlx::query!(
+        //     r#"
         //     SELECT table_name
         //     FROM information_schema.tables
         //     WHERE table_schema = ? AND table_type = 'BASE TABLE';
         // "#,
-        //         "test"
-        //     )
-        //     .fetch_all(db)
-        //     .await?;
+        //     "test"
+        // )
+        // .fetch_all(pool)
+        // .await?;
 
         // let mut names = vec![];
         // for table in tables {
         //     names.push(table.table_name)
         // }
-        Ok(vec!["string".to_string()])
+        Ok(vec!["fizz".to_string()])
     }
 
-    // async fn with_transaction(
-    //     &self,
-    //     db: &C,
-    //     f: Box<
-    //         dyn FnOnce(
-    //                 &'a mut Transaction<C>,
-    //             )
-    //                 -> Pin<Box<(dyn Future<Output = anyhow::Result<()>> + Sync + Send + 'a)>>
-    //             + Send
-    //             + Sync
-    //             + 'a,
-    //     >,
-    // ) {
-    //     let handler = thread::spawn(|| {});
-    //     let mut tx = db.begin().await.unwrap();
-    //     f(&mut tx).await;
-    //     tx.commit();
-    //     // Ok(())
-    // }
+    async fn with_transaction<'b>(
+        &self,
+        pool: &Pool<C>,
+        queries: Vec<Query<'b, T>>,
+    ) -> anyhow::Result<()> {
+        let mut tx = pool.begin().await?;
+        for query in queries {
+            query.execute(&mut tx).await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
 }

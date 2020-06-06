@@ -1,13 +1,11 @@
 use crate::database::DB;
 use crate::mysql;
 use regex::Regex;
-use sqlx::{Connect, Connection, Database, Execute, Executor, Pool, Query, Transaction};
+use sqlx::{Connect, Connection, Database, Pool};
 use std::fs::File;
-use std::future::Future;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
-use std::pin::Pin;
 use yaml_rust::{Yaml, YamlLoader};
 
 pub struct Loader<T, C>
@@ -97,59 +95,12 @@ where
         Ok(loader)
     }
 
-    // async fn with_transaction<'b, P>(&self, db: &C, f: P) -> anyhow::Result<()>
-    // where
-    //     P: FnOnce(
-    //         &mut Transaction<C>,
-    //     ) -> Pin<Box<(dyn Future<Output = anyhow::Result<()>> + Send + 'b)>>,
-    // {
-    //     let mut tx = db.begin().await.unwrap();
-    //     f(&mut tx).await?;
-    //     tx.commit();
-    //     Ok(())
-    // }
-
-    async fn with_transaction<'a>(
-        &self,
-        pool: &Pool<C>,
-        queries: Vec<Query<'a, T>>,
-    ) -> anyhow::Result<()>
-    where
-        T: Database + Sync + Send,
-        C: Connection<Database = T> + Connect<Database = T>,
-    {
-        let mut tx = pool.begin().await?;
-        for query in queries {
-            query.execute(&mut tx).await?;
-        }
-        tx.commit().await?;
-        Ok(())
-    }
-
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             // if !async { self.ensure_test_database().await }.await.unwrap() {
             //     panic!("aiueo")
             // }
         }
-
-        // self.helper
-        //     .as_ref()
-        //     .unwrap()
-        //     .with_transaction(
-        //         self.db.as_ref().unwrap(),
-        //         Box::new(|tx| {
-        //             , Box::pin(async {
-        // for index in 0..self.fixtures_files.len() {
-        //     for i in &self.fixtures_files[index].insert_sqls {
-        //         sqlx::query(i.sql.as_str()).execute(&mut tx).await;
-        //     }
-        // }
-        //                 Ok(())
-        //             })
-        //         }),
-        //     )
-        //     .await;
 
         let mut queries = vec![];
         for index in 0..self.fixtures_files.len() {
@@ -158,7 +109,10 @@ where
             }
         }
 
-        self.with_transaction(self.db.as_ref().unwrap(), queries)
+        self.helper
+            .as_ref()
+            .unwrap()
+            .with_transaction(self.db.as_ref().unwrap(), queries)
             .await?;
         Ok(())
     }
