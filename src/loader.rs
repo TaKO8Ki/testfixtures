@@ -10,13 +10,13 @@ use std::path::Path;
 use std::pin::Pin;
 use yaml_rust::{Yaml, YamlLoader};
 
-pub struct Loader<'a, T, C>
+pub struct Loader<T, C>
 where
     T: Database + Sync + Send,
     C: Connection + Connect,
 {
     pub db: Option<Pool<C>>,
-    pub helper: Option<Box<dyn DB<'a, T, C> + Send + Sync + 'a>>,
+    pub helper: Option<Box<dyn DB<T, C> + Send + Sync>>,
     pub fixtures_files: Vec<FixtureFile>,
     pub skip_test_database_check: bool,
     pub location: Option<String>,
@@ -47,7 +47,7 @@ pub enum Dialect {
     MySql,
 }
 
-impl<'a, T, C> Default for Loader<'a, T, C>
+impl<T, C> Default for Loader<T, C>
 where
     T: Database + Sync + Send,
     C: Connection + Connect + Sync + Send,
@@ -69,14 +69,14 @@ where
     }
 }
 
-impl<'a, T, C> Loader<'a, T, C>
+impl<T, C> Loader<T, C>
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
     pub async fn new(
         options: Vec<Box<dyn FnOnce(&mut Loader<T, C>)>>,
-    ) -> anyhow::Result<Loader<'a, T, C>> {
+    ) -> anyhow::Result<Loader<T, C>> {
         let mut loader = Self::default();
         for o in options {
             o(&mut loader);
@@ -109,7 +109,7 @@ where
     //     Ok(())
     // }
 
-    async fn with_transaction(
+    async fn with_transaction<'a>(
         &self,
         pool: &Pool<C>,
         queries: Vec<Query<'a, T>>,
@@ -126,7 +126,7 @@ where
         Ok(())
     }
 
-    pub async fn load<E: Executor<Database = T>>(&'static self) -> anyhow::Result<()> {
+    pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             // if !async { self.ensure_test_database().await }.await.unwrap() {
             //     panic!("aiueo")
@@ -163,11 +163,11 @@ where
         Ok(())
     }
 
-    pub fn database(db: Pool<C>) -> Box<dyn FnOnce(&mut Loader<T, C>) + 'a> {
+    pub fn database(db: Pool<C>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
         Box::new(|loader| loader.db = Some(db))
     }
 
-    pub fn dialect(dialect: &str) -> Box<dyn FnOnce(&mut Loader<'a, T, C>) + 'a> {
+    pub fn dialect(dialect: &str) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
         let dialect = match dialect {
             "mysql" | "mariadb" => Box::new(mysql::MySQL { tables: vec![] }),
             _ => Box::new(mysql::MySQL { tables: vec![] }),

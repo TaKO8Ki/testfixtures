@@ -4,7 +4,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 #[async_trait]
-pub trait DB<'a, T, C>
+pub trait DB<T, C>
 where
 	T: Database + Sync + Send,
 	C: Connection<Database = T> + Sync + Send,

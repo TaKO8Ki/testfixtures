@@ -17,7 +17,7 @@ impl Default for MySQL {
 }
 
 #[async_trait]
-impl<'a, T, C> DB<'a, T, C> for MySQL
+impl<'a, T, C> DB<T, C> for MySQL
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect + Sync + Send,
