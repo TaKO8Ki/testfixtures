@@ -19,35 +19,35 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
-    async fn init(&mut self, db: &Pool<C>) -> anyhow::Result<()> {
-        self.tables = self.table_names(db).await?;
+    async fn init(&mut self, _db: &Pool<C>) -> anyhow::Result<()> {
         Ok(())
     }
 
-    async fn database_name(&self, db: &Pool<C>) -> anyhow::Result<String> {
-        // let rec: (String,) = sqlx::query!("SELECT DATABASE()").fetch_one(db).await?;
-        // Ok(rec.0)
-        Ok("fizz".to_string())
-    }
+    // TODO: complete this function
+    // async fn database_name(&self, db: &Pool<C>) -> anyhow::Result<String> {
+    //     let rec: (String,) = sqlx::query!("SELECT DATABASE()").fetch_one(db).await?;
+    //     Ok(rec.0)
+    // }
 
-    async fn table_names(&self, pool: &Pool<C>) -> anyhow::Result<Vec<String>> {
-        // let tables = sqlx::query!(
-        //     r#"
-        //     SELECT table_name
-        //     FROM information_schema.tables
-        //     WHERE table_schema = ? AND table_type = 'BASE TABLE';
-        // "#,
-        //     "test"
-        // )
-        // .fetch_all(pool)
-        // .await?;
+    // TODO: complete this function
+    // async fn table_names(&self, pool: &Pool<C>) -> anyhow::Result<Vec<String>> {
+    //     let tables = sqlx::query!(
+    //         r#"
+    //         SELECT table_name
+    //         FROM information_schema.tables
+    //         WHERE table_schema = ? AND table_type = 'BASE TABLE';
+    //     "#,
+    //         "test"
+    //     )
+    //     .fetch_all(pool)
+    //     .await?;
 
-        // let mut names = vec![];
-        // for table in tables {
-        //     names.push(table.table_name)
-        // }
-        Ok(vec!["fizz".to_string()])
-    }
+    //     let mut names = vec![];
+    //     for table in tables {
+    //         names.push(table.table_name)
+    //     }
+    //     Ok(names)
+    // }
 
     async fn with_transaction<'b>(
         &self,
