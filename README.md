@@ -2,6 +2,18 @@
 
 ## [WIP] Usage
 
+Create fixture files. Each file should contain data for a single table and have the name <table_name>.yml:
+
+```yml
+# todos.yml
+- id: 1
+  description: buy new camera
+  done: 0
+- id: 2
+  description: meeting
+  done: 0
+```
+
 Your tests would look like this.
 
 ```rust
