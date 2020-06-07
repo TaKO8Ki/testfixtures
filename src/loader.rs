@@ -1,12 +1,13 @@
 use crate::database::DB;
 use crate::mysql;
-use regex::Regex;
-use sqlx::{Connect, Connection, Database, Pool};
+use sqlx::{Connect, Connection, Database, MySql, MySqlConnection, Pool, Query};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 use yaml_rust::{Yaml, YamlLoader};
+
+pub type MySqlLoader = Loader<MySql, MySqlConnection>;
 
 pub struct Loader<T, C>
 where
@@ -79,6 +80,8 @@ where
         for o in options {
             o(&mut loader);
         }
+
+        // loader.helper();
         loader.build_insert_sqls();
         loader
             .helper
@@ -103,8 +106,15 @@ where
         }
 
         let mut queries = vec![];
-        for index in 0..self.fixtures_files.len() {
-            for i in &self.fixtures_files[index].insert_sqls {
+
+        let delete_queries = self.delete_queries();
+        let mut delete_queries: Vec<Query<'_, T>> =
+            delete_queries.iter().map(|x| sqlx::query(x)).collect();
+
+        queries.append(&mut delete_queries);
+
+        for fixtures_file in &self.fixtures_files {
+            for i in &fixtures_file.insert_sqls {
                 queries.push(sqlx::query(i.sql.as_str()))
             }
         }
@@ -123,8 +133,8 @@ where
 
     pub fn dialect(dialect: &str) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
         let dialect = match dialect {
-            "mysql" | "mariadb" => Box::new(mysql::MySQL { tables: vec![] }),
-            _ => Box::new(mysql::MySQL { tables: vec![] }),
+            "mysql" | "mariadb" => Box::new(mysql::MySql { tables: vec![] }),
+            _ => Box::new(mysql::MySql { tables: vec![] }),
         };
         Box::new(|loader| loader.helper = Some(dialect))
     }
@@ -232,15 +242,10 @@ where
         (sql_str, values)
     }
 
-    async fn ensure_test_database(&'static self) -> anyhow::Result<bool> {
-        let db_name = self
-            .helper
-            .as_ref()
-            .unwrap()
-            .database_name(self.db.as_ref().unwrap())
-            .await?;
-        let re = Regex::new(r"^.?test$").unwrap();
-        Ok(re.is_match(db_name.as_str()))
+    fn delete_queries(&self) -> Vec<String> {
+        let delete_queries: Vec<String> =
+            self.fixtures_files.iter().map(|x| (x.delete())).collect();
+        delete_queries
     }
 }
 
@@ -252,5 +257,9 @@ impl FixtureFile {
             .to_str()
             .unwrap()
             .to_string()
+    }
+
+    fn delete(&self) -> String {
+        format!("DELETE FROM {}", self.file_stem())
     }
 }

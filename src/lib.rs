@@ -3,3 +3,4 @@ pub mod loader;
 pub mod mysql;
 // reexport key APIs
 pub use loader::Loader;
+pub use loader::MySqlLoader;

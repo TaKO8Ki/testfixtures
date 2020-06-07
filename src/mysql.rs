@@ -3,18 +3,18 @@ use async_trait::async_trait;
 use sqlx::{Connect, Connection, Database, Pool, Query};
 
 #[derive(Debug)]
-pub struct MySQL {
+pub struct MySql {
     pub tables: Vec<String>,
 }
 
-impl Default for MySQL {
+impl Default for MySql {
     fn default() -> Self {
-        MySQL { tables: vec![] }
+        MySql { tables: vec![] }
     }
 }
 
 #[async_trait]
-impl<T, C> DB<T, C> for MySQL
+impl<T, C> DB<T, C> for MySql
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
