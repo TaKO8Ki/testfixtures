@@ -7,7 +7,7 @@ Create fixture files. Each file should contain data for a single table and have 
 ```yml
 # todos.yml
 - id: 1
-  description: buy new camera
+  description: buy a new camera
   done: 0
 - id: 2
   description: meeting
