@@ -1,6 +1,7 @@
 use crate::database::DB;
 use crate::mysql;
 use sqlx::{Connect, Connection, Database, MySql, MySqlConnection, Pool, Query};
+use std::any::type_name;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -12,7 +13,7 @@ pub type MySqlLoader = Loader<MySql, MySqlConnection>;
 pub struct Loader<T, C>
 where
     T: Database + Sync + Send,
-    C: Connection + Connect,
+    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
     pub db: Option<Pool<C>>,
     pub helper: Option<Box<dyn DB<T, C> + Send + Sync>>,
@@ -49,7 +50,7 @@ pub enum Dialect {
 impl<T, C> Default for Loader<T, C>
 where
     T: Database + Sync + Send,
-    C: Connection + Connect + Sync + Send,
+    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
     fn default() -> Self {
         Loader::<T, C> {
@@ -80,8 +81,7 @@ where
         for o in options {
             o(&mut loader);
         }
-
-        // loader.helper();
+        loader.helper = Self::dialect();
         loader.build_insert_sqls();
         loader
             .helper
@@ -89,22 +89,10 @@ where
             .unwrap()
             .init(loader.db.as_ref().unwrap())
             .await?;
-        loader
-            .helper
-            .as_ref()
-            .unwrap()
-            .database_name(loader.db.as_ref().unwrap())
-            .await?;
         Ok(loader)
     }
 
     pub async fn load(&self) -> anyhow::Result<()> {
-        if !self.skip_test_database_check {
-            // if !async { self.ensure_test_database().await }.await.unwrap() {
-            //     panic!("aiueo")
-            // }
-        }
-
         let mut queries = vec![];
 
         let delete_queries = self.delete_queries();
@@ -131,12 +119,13 @@ where
         Box::new(|loader| loader.db = Some(db))
     }
 
-    pub fn dialect(dialect: &str) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
-        let dialect = match dialect {
-            "mysql" | "mariadb" => Box::new(mysql::MySql { tables: vec![] }),
+    fn dialect() -> Option<Box<dyn DB<T, C> + Send + Sync>> {
+        // TODO: postgres, sqlite
+        let dialect = match type_name::<T>() {
+            "sqlx_core::mysql::database::MySql" => Box::new(mysql::MySql { tables: vec![] }),
             _ => Box::new(mysql::MySql { tables: vec![] }),
         };
-        Box::new(|loader| loader.helper = Some(dialect))
+        Some(dialect)
     }
 
     pub fn skip_test_database_check() -> Box<dyn FnOnce(&mut Loader<T, C>)> {
@@ -148,6 +137,7 @@ where
         Box::new(|loader| loader.location = Some(location))
     }
 
+    // TODO: complete this function
     // pub fn directory(mut self, directory: String) -> Self {
     //     let fixtures = self.fixtures_from_dir(directory);
     //     self.fixturesFiles = Some(fixtures);
@@ -159,6 +149,7 @@ where
         Box::new(|loader| loader.fixtures_files = fixtures)
     }
 
+    // TODO: complete this function
     // pub fn fixtures_from_dir(directory: String) -> Vec<FixtureFile> {}
 
     fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile> {
