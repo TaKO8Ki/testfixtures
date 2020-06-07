@@ -1,4 +1,5 @@
 use crate::database::DB;
+use crate::fixture_file::{FixtureFile, InsertSQL};
 use crate::mysql;
 use sqlx::{Connect, Connection, Database, MySql, MySqlConnection, Pool, Query};
 use std::any::type_name;
@@ -26,25 +27,6 @@ where
     pub template_right_delim: Option<String>,
     pub template_options: Option<Vec<String>>,
     pub template_data: Option<String>,
-}
-
-#[derive(Debug)]
-pub struct FixtureFile {
-    pub path: String,
-    pub file_name: String,
-    pub content: File,
-    pub insert_sqls: Vec<InsertSQL>,
-}
-
-#[derive(Debug)]
-pub struct InsertSQL {
-    pub sql: String,
-    pub params: Vec<String>,
-}
-
-#[derive(Debug)]
-pub enum Dialect {
-    MySql,
 }
 
 impl<T, C> Default for Loader<T, C>
@@ -234,23 +216,6 @@ where
     }
 
     fn delete_queries(&self) -> Vec<String> {
-        let delete_queries: Vec<String> =
-            self.fixtures_files.iter().map(|x| (x.delete())).collect();
-        delete_queries
-    }
-}
-
-impl FixtureFile {
-    fn file_stem(&self) -> String {
-        Path::new(self.file_name.as_str())
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string()
-    }
-
-    fn delete(&self) -> String {
-        format!("DELETE FROM {}", self.file_stem())
+        self.fixtures_files.iter().map(|x| (x.delete())).collect()
     }
 }
