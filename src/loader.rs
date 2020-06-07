@@ -15,7 +15,7 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
-    pub db: Option<Pool<C>>,
+    pub pool: Option<Pool<C>>,
     pub helper: Option<Box<dyn DB<T, C> + Send + Sync>>,
     pub fixtures_files: Vec<FixtureFile>,
     pub skip_test_database_check: bool,
@@ -54,7 +54,7 @@ where
 {
     fn default() -> Self {
         Loader::<T, C> {
-            db: None,
+            pool: None,
             helper: None,
             fixtures_files: vec![],
             skip_test_database_check: false,
@@ -87,7 +87,7 @@ where
             .helper
             .as_mut()
             .unwrap()
-            .init(loader.db.as_ref().unwrap())
+            .init(loader.pool.as_ref().unwrap())
             .await?;
         Ok(loader)
     }
@@ -110,13 +110,13 @@ where
         self.helper
             .as_ref()
             .unwrap()
-            .with_transaction(self.db.as_ref().unwrap(), queries)
+            .with_transaction(self.pool.as_ref().unwrap(), queries)
             .await?;
         Ok(())
     }
 
-    pub fn database(db: Pool<C>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
-        Box::new(|loader| loader.db = Some(db))
+    pub fn database(pool: Pool<C>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
+        Box::new(|loader| loader.pool = Some(pool))
     }
 
     fn dialect() -> Option<Box<dyn DB<T, C> + Send + Sync>> {

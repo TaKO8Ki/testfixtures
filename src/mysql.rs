@@ -19,12 +19,12 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
-    async fn init(&mut self, _db: &Pool<C>) -> anyhow::Result<()> {
+    async fn init(&mut self, _pool: &Pool<C>) -> anyhow::Result<()> {
         Ok(())
     }
 
     // TODO: complete this function
-    // async fn database_name(&self, db: &Pool<C>) -> anyhow::Result<String> {
+    // async fn database_name(&self, pool: &Pool<C>) -> anyhow::Result<String> {
     //     let rec: (String,) = sqlx::query!("SELECT DATABASE()").fetch_one(db).await?;
     //     Ok(rec.0)
     // }
