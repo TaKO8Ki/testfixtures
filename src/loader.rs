@@ -2,7 +2,6 @@ use crate::database::DB;
 use crate::fixture_file::{FixtureFile, InsertSQL};
 use crate::mysql;
 use sqlx::{Connect, Connection, Database, MySql, MySqlConnection, Pool, Query};
-use std::any::type_name;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -51,19 +50,15 @@ where
     }
 }
 
-impl<T, C> Loader<T, C>
-where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
-{
+impl MySqlLoader {
     pub async fn new(
-        options: Vec<Box<dyn FnOnce(&mut Loader<T, C>)>>,
-    ) -> anyhow::Result<Loader<T, C>> {
+        options: Vec<Box<dyn FnOnce(&mut MySqlLoader)>>,
+    ) -> anyhow::Result<MySqlLoader> {
         let mut loader = Self::default();
         for o in options {
             o(&mut loader);
         }
-        loader.helper = Self::dialect();
+        loader.helper = Some(Box::new(mysql::MySql { tables: vec![] }));
         loader.build_insert_sqls();
         loader
             .helper
@@ -73,7 +68,13 @@ where
             .await?;
         Ok(loader)
     }
+}
 
+impl<T, C> Loader<T, C>
+where
+    T: Database + Sync + Send,
+    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+{
     pub async fn load(&self) -> anyhow::Result<()> {
         let mut queries = vec![];
 
@@ -99,15 +100,6 @@ where
 
     pub fn database(pool: Pool<C>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
         Box::new(|loader| loader.pool = Some(pool))
-    }
-
-    fn dialect() -> Option<Box<dyn DB<T, C> + Send + Sync>> {
-        // TODO: postgres, sqlite
-        let dialect = match type_name::<T>() {
-            "sqlx_core::mysql::database::MySql" => Box::new(mysql::MySql { tables: vec![] }),
-            _ => Box::new(mysql::MySql { tables: vec![] }),
-        };
-        Some(dialect)
     }
 
     pub fn skip_test_database_check() -> Box<dyn FnOnce(&mut Loader<T, C>)> {
