@@ -45,13 +45,15 @@ async fn test_function() -> anyhow::Result<()> {
 
 ## Implemation status
 ### Database
-- [x] mysql
-- [ ] postgres
-- [ ] sqlite
+- [x] MySQL and MariaDB
+- [ ] Postgres
+- [ ] SQLite
 
 ### Option
 - [x] database
 - [x] load files
+- [x] skip_test_database_check
+- [x] location
 - [ ] load files from a directory
 - [ ] yaml template
 
