@@ -1,4 +1,4 @@
-use crate::database::DB;
+use crate::helper::Database as DB;
 use async_trait::async_trait;
 use sqlx::{Connect, Connection, Database, Pool, Query};
 

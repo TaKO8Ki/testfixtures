@@ -1,14 +1,11 @@
-use crate::database::DB;
 use crate::fixture_file::{FixtureFile, InsertSQL};
-use crate::mysql;
-use sqlx::{Connect, Connection, Database, MySql, MySqlConnection, Pool, Query};
+use crate::helper::Database as DB;
+use sqlx::{Connect, Connection, Database, Pool, Query};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 use yaml_rust::{Yaml, YamlLoader};
-
-pub type MySqlLoader = Loader<MySql, MySqlConnection>;
 
 pub struct Loader<T, C>
 where
@@ -47,26 +44,6 @@ where
             template_options: None,
             template_data: None,
         }
-    }
-}
-
-impl MySqlLoader {
-    pub async fn new(
-        options: Vec<Box<dyn FnOnce(&mut MySqlLoader)>>,
-    ) -> anyhow::Result<MySqlLoader> {
-        let mut loader = Self::default();
-        for o in options {
-            o(&mut loader);
-        }
-        loader.helper = Some(Box::new(mysql::MySql { tables: vec![] }));
-        loader.build_insert_sqls();
-        loader
-            .helper
-            .as_mut()
-            .unwrap()
-            .init(loader.pool.as_ref().unwrap())
-            .await?;
-        Ok(loader)
     }
 }
 
@@ -145,7 +122,7 @@ where
         fixture_files
     }
 
-    fn build_insert_sqls(&mut self) {
+    pub(crate) fn build_insert_sqls(&mut self) {
         for index in 0..self.fixtures_files.len() {
             let file = File::open(self.fixtures_files[index].path.clone()).unwrap();
             let mut buf_reader = BufReader::new(file);

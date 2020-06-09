@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use sqlx::{Connect, Connection, Database, Pool, Query};
+use sqlx::{Connect, Connection, Database as DB, Pool, Query};
 
 #[async_trait]
-pub trait DB<T, C>
+pub trait Database<T, C>
 where
-	T: Database + Sync + Send,
+	T: DB + Sync + Send,
 	C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
 {
 	async fn init(&mut self, db: &Pool<C>) -> anyhow::Result<()>;
@@ -21,6 +21,6 @@ where
 		queries: Vec<Query<'a, T>>,
 	) -> anyhow::Result<()>
 	where
-		T: Database + Sync + Send,
+		T: DB + Sync + Send,
 		C: Connection<Database = T> + Connect<Database = T>;
 }

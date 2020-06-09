@@ -16,7 +16,7 @@ pub struct InsertSQL {
 }
 
 impl FixtureFile {
-    pub fn file_stem(&self) -> String {
+    pub(crate) fn file_stem(&self) -> String {
         Path::new(self.file_name.as_str())
             .file_stem()
             .unwrap()
@@ -25,7 +25,7 @@ impl FixtureFile {
             .to_string()
     }
 
-    pub fn delete(&self) -> String {
+    pub(crate) fn delete(&self) -> String {
         format!("DELETE FROM {}", self.file_stem())
     }
 }
