@@ -2,6 +2,8 @@ use crate::loader::Loader;
 use crate::mysql::helper;
 use sqlx::{MySql, MySqlConnection};
 
+pub type MySqlLoader = Loader<MySql, MySqlConnection>;
+
 impl MySqlLoader {
     pub async fn new(
         options: Vec<Box<dyn FnOnce(&mut MySqlLoader)>>,
@@ -21,5 +23,3 @@ impl MySqlLoader {
         Ok(loader)
     }
 }
-
-pub type MySqlLoader = Loader<MySql, MySqlConnection>;

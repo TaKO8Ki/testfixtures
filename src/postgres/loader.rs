@@ -2,6 +2,8 @@ use crate::loader::Loader;
 use crate::postgres::helper;
 use sqlx::{PgConnection, Postgres};
 
+pub type PostgresLoader = Loader<Postgres, PgConnection>;
+
 impl PostgresLoader {
     pub async fn new(
         options: Vec<Box<dyn FnOnce(&mut PostgresLoader)>>,
@@ -21,5 +23,3 @@ impl PostgresLoader {
         Ok(loader)
     }
 }
-
-pub type PostgresLoader = Loader<Postgres, PgConnection>;
