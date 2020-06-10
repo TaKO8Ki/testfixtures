@@ -2,14 +2,14 @@ name: Release
 on:
   push:
     tags:
-			- 'release-*'
+      - 'release-*'
 jobs:
-	release:
-		name: Check version, Add tag and release
-		runs-on: ubuntu-latest
-		steps:
-			- uses: actions/checkout@v1
-			- run: cargo login ${CRATES_IO_TOKEN}
-				env:
-					CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-			- run: cargo publish
+  release:
+    name: Check version, Add tag and release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: cargo login ${CRATES_IO_TOKEN}
+        env:
+          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      - run: cargo publish
