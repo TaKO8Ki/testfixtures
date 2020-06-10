@@ -130,19 +130,15 @@ where
             buf_reader.read_to_string(&mut contents).unwrap();
             let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
 
-            match &records[0] {
-                Yaml::Array(records) => {
-                    for record in records {
-                        let (sql, values) =
-                            self.build_insert_sql(&self.fixtures_files[index], record);
-                        self.fixtures_files[index].insert_sqls.push(InsertSQL {
-                            sql: sql,
-                            params: values,
-                        });
-                    }
+            if let Yaml::Array(records) = &records[0] {
+                for record in records {
+                    let (sql, values) = self.build_insert_sql(&self.fixtures_files[index], record);
+                    self.fixtures_files[index].insert_sqls.push(InsertSQL {
+                        sql: sql,
+                        params: values,
+                    });
                 }
-                _ => (),
-            }
+            };
         }
     }
 
