@@ -130,19 +130,15 @@ where
             buf_reader.read_to_string(&mut contents).unwrap();
             let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
 
-            match &records[0] {
-                Yaml::Array(records) => {
-                    for record in records {
-                        let (sql, values) =
-                            self.build_insert_sql(&self.fixtures_files[index], record);
-                        self.fixtures_files[index].insert_sqls.push(InsertSQL {
-                            sql: sql,
-                            params: values,
-                        });
-                    }
+            if let Yaml::Array(records) = &records[0] {
+                for record in records {
+                    let (sql, values) = self.build_insert_sql(&self.fixtures_files[index], record);
+                    self.fixtures_files[index].insert_sqls.push(InsertSQL {
+                        sql,
+                        params: values,
+                    });
                 }
-                _ => (),
-            }
+            };
         }
     }
 
@@ -150,31 +146,29 @@ where
         let mut sql_columns = vec![];
         let mut sql_values = vec![];
         let mut values = vec![];
-        match &record {
-            Yaml::Hash(hash) => {
-                for (key, value) in hash {
-                    let value = match value {
-                        Yaml::String(v) => format!(r#""{}""#, v.to_string()),
-                        Yaml::Integer(v) => v.to_string(),
-                        _ => "".to_string(),
-                    };
-                    let key = match key {
-                        Yaml::String(k) => k.to_string(),
-                        Yaml::Integer(k) => k.to_string(),
-                        _ => "".to_string(),
-                    };
-                    sql_columns.push(key);
-                    if value.starts_with("RAW=") {
-                        sql_values.push(value.replace("RAW=", ""));
-                        continue;
-                    }
-
-                    sql_values.push("?".to_string());
-                    values.push(value);
+        if let Yaml::Hash(hash) = &record {
+            for (key, value) in hash {
+                let value = match value {
+                    Yaml::String(v) => format!(r#""{}""#, v.to_string()),
+                    Yaml::Integer(v) => v.to_string(),
+                    _ => "".to_string(),
+                };
+                let key = match key {
+                    Yaml::String(k) => k.to_string(),
+                    Yaml::Integer(k) => k.to_string(),
+                    _ => "".to_string(),
+                };
+                sql_columns.push(key);
+                if value.starts_with("RAW=") {
+                    sql_values.push(value.replace("RAW=", ""));
+                    continue;
                 }
+
+                sql_values.push("?".to_string());
+                values.push(value);
             }
-            _ => (),
-        }
+        };
+
         let sql_str = format!(
             "INSERT INTO {} ({}) VALUES ({})",
             file.file_stem(),
