@@ -1,7 +1,7 @@
 use crate::fixture_file::{FixtureFile, InsertSQL};
 use crate::helper::Database as DB;
 use sqlx::{Connect, Connection, Database, Pool, Query};
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
@@ -122,9 +122,36 @@ where
         fixture_files
     }
 
+    fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile> {
+        let mut fixture_files: Vec<FixtureFile> = vec![];
+        for f in fs::read_dir(directory).unwrap() {
+            let f = f.unwrap();
+            let fixture = FixtureFile {
+                path: f.path().to_str().unwrap().to_string(),
+                file_name: f.file_name().to_str().unwrap().to_string(),
+                content: File::open(f.path()).unwrap(),
+                insert_sqls: vec![],
+            };
+            fixture_files.push(fixture);
+        }
+        fixture_files
+    }
+
+    fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile> {
+        let mut fixture_files: Vec<FixtureFile> = vec![];
+        for path in paths {
+            if Path::new(path).is_dir() {
+                fixture_files.append(&mut Self::fixtures_from_directory(path))
+            } else {
+                fixture_files.append(&mut Self::fixtures_from_files(vec![path]))
+            }
+        }
+        fixture_files
+    }
+
     pub(crate) fn build_insert_sqls(&mut self) {
         for index in 0..self.fixtures_files.len() {
-            let file = File::open(self.fixtures_files[index].path.clone()).unwrap();
+            let file = &self.fixtures_files[index].content;
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             buf_reader.read_to_string(&mut contents).unwrap();

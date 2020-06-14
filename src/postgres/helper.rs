@@ -5,6 +5,18 @@ use sqlx::{Connect, Connection, Database, Pool, Query};
 #[derive(Debug)]
 pub struct Postgres {
     pub tables: Vec<String>,
+    // pub use_alter_constraint: bool,
+    // pub skip_reset_sequences: bool,
+    // pub reset_sequences_to:   u32,
+    // pub sequences:                Vec<String>,
+    // pub nonDeferrableConstraints: Vec<PgConstraint>,
+    // pub tablesChecksum:           map[string]string
+}
+
+#[derive(Debug)]
+pub struct PgConstraint {
+    table_name: String,
+    constraint_name: String,
 }
 
 impl Default for Postgres {
@@ -55,10 +67,24 @@ where
         queries: Vec<Query<'b, T>>,
     ) -> anyhow::Result<()> {
         let mut tx = pool.begin().await?;
-        for query in queries {
-            query.execute(&mut tx).await?;
+        let result: anyhow::Result<()> = async {
+            sqlx::query("SET FOREIGN_KEY_CHECKS = 0")
+                .execute(&mut tx)
+                .await?;
+            for query in queries {
+                query.execute(&mut tx).await?;
+            }
+            sqlx::query("SET FOREIGN_KEY_CHECKS = 1")
+                .execute(&mut tx)
+                .await?;
+            Ok(())
         }
-        tx.commit().await?;
+        .await;
+        if result.is_ok() {
+            tx.commit().await?;
+        } else {
+            tx.rollback().await?;
+        }
         Ok(())
     }
 }

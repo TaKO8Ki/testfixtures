@@ -55,10 +55,24 @@ where
         queries: Vec<Query<'b, T>>,
     ) -> anyhow::Result<()> {
         let mut tx = pool.begin().await?;
-        for query in queries {
-            query.execute(&mut tx).await?;
+        let result: anyhow::Result<()> = async {
+            sqlx::query("SET FOREIGN_KEY_CHECKS = 0")
+                .execute(&mut tx)
+                .await?;
+            for query in queries {
+                query.execute(&mut tx).await?;
+            }
+            sqlx::query("SET FOREIGN_KEY_CHECKS = 1")
+                .execute(&mut tx)
+                .await?;
+            Ok(())
         }
-        tx.commit().await?;
+        .await;
+        if result.is_ok() {
+            tx.commit().await?;
+        } else {
+            tx.rollback().await?;
+        }
         Ok(())
     }
 }
