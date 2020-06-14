@@ -63,7 +63,7 @@ async fn test_function() -> anyhow::Result<()> {
 - [x] load files
 - [x] skip_test_database_check
 - [x] location
-- [ ] load files from a directory
+- [x] load files from a directory
 - [ ] yaml template
 
 # Reference
