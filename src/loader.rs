@@ -75,32 +75,32 @@ where
         Ok(())
     }
 
-    pub fn database(pool: Pool<C>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
-        Box::new(|loader| loader.pool = Some(pool))
+    pub fn database(&mut self, pool: Pool<C>) {
+        self.pool = Some(pool)
     }
 
-    pub fn skip_test_database_check() -> Box<dyn FnOnce(&mut Loader<T, C>)> {
-        Box::new(|loader| loader.skip_test_database_check = true)
+    pub fn skip_test_database_check(&mut self) {
+        self.skip_test_database_check = true
     }
 
-    pub fn location(location: &str) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
+    pub fn location(&mut self, location: &str) {
         let location = location.to_string();
-        Box::new(|loader| loader.location = Some(location))
+        self.location = Some(location)
     }
 
-    pub fn files(files: Vec<&str>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
+    pub fn files(&mut self, files: Vec<&str>) {
         let mut fixtures = Self::fixtures_from_files(files);
-        Box::new(move |loader| loader.fixtures_files.append(&mut fixtures))
+        self.fixtures_files.append(&mut fixtures)
     }
 
-    pub fn directory(directory: &str) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
+    pub fn directory(&mut self, directory: &str) {
         let mut fixtures = Self::fixtures_from_directory(directory);
-        Box::new(move |loader| loader.fixtures_files.append(&mut fixtures))
+        self.fixtures_files.append(&mut fixtures)
     }
 
-    pub fn paths(paths: Vec<&str>) -> Box<dyn FnOnce(&mut Loader<T, C>)> {
+    pub fn paths(&mut self, paths: Vec<&str>) {
         let mut fixtures = Self::fixtures_from_paths(paths);
-        Box::new(move |loader| loader.fixtures_files.append(&mut fixtures))
+        self.fixtures_files.append(&mut fixtures)
     }
 
     fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile> {

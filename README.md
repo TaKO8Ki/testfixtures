@@ -1,6 +1,14 @@
-# testfixtures
+# [WIP] testfixtures
 
-## [WIP] Usage
+## Dependencies
+
+```toml
+[dependencies]
+testfixtures = "1.0"
+sqlx = "0.3"
+```
+
+## Usage
 
 Create fixture files. Each file should contain data for a single table and have the name <table_name>.yml:
 
@@ -25,11 +33,12 @@ use testfixtures::MySqlLoader;
 #[paw::main]
 async fn test_function() -> anyhow::Result<()> {
     let pool = MySqlPool::new(&env::var("DATABASE_URL")?).await?;
-    let loader = MySqlLoader::new(vec![
-        MySqlLoader::database(pool),
-        MySqlLoader::files(vec!["todos.yml"]),
-        MySqlLoader::skip_test_database_check(),
-    ])
+    let loader = MySqlLoader::new(|cfg| {
+        cfg.location("fehwo");
+        cfg.database(pool);
+        cfg.skip_test_database_check();
+        cfg.paths(vec!["fixtures/todos.yml"]);
+    })
     .await?;
 
     // load your fixtures
@@ -54,7 +63,7 @@ async fn test_function() -> anyhow::Result<()> {
 - [x] load files
 - [x] skip_test_database_check
 - [x] location
-- [ ] load files from a directory
+- [x] load files from a directory
 - [ ] yaml template
 
 # Reference
