@@ -5,13 +5,12 @@ use sqlx::{PgConnection, Postgres};
 pub type PostgresLoader = Loader<Postgres, PgConnection>;
 
 impl PostgresLoader {
-    pub async fn new(
-        options: Vec<Box<dyn FnOnce(&mut PostgresLoader)>>,
-    ) -> anyhow::Result<PostgresLoader> {
+    pub async fn new<F>(options: F) -> anyhow::Result<PostgresLoader>
+    where
+        F: FnOnce(&mut PostgresLoader),
+    {
         let mut loader = Self::default();
-        for o in options {
-            o(&mut loader);
-        }
+        options(&mut loader);
         loader.helper = Some(Box::new(helper::Postgres { tables: vec![] }));
         loader.build_insert_sqls();
         loader
