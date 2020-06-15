@@ -1,5 +1,7 @@
 # [WIP] testfixtures
 
+![](https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master) ![img](https://img.shields.io/github/license/TaKO8Ki/testfixtures)
+
 ## Dependencies
 
 ```toml
