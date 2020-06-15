@@ -230,7 +230,6 @@ where
             sql_columns.join(", "),
             values.join(", "),
         );
-        println!("{}", sql_str);
         (sql_str, values)
     }
 
