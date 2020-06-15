@@ -12,7 +12,7 @@ sqlx = "0.3"
 
 ## Usage
 
-Create fixture files. Each file should contain data for a single table and have the name <table_name>.yml.
+Create fixture files. Each file should contain data for a certain table and have the name <table_name>.yml.
 
 ```yml
 # todos.yml
@@ -36,6 +36,7 @@ If you need to write raw SQL, probably to call a function, prefix the value of t
 Your tests would look like this.
 
 ```rust
+use chrono::Utc;
 use sqlx::MySqlPool;
 use std::env;
 use testfixtures::MySqlLoader;
@@ -45,7 +46,7 @@ use testfixtures::MySqlLoader;
 async fn test_function() -> anyhow::Result<()> {
     let pool = MySqlPool::new(&env::var("DATABASE_URL")?).await?;
     let loader = MySqlLoader::new(|cfg| {
-        cfg.location("fehwo");
+        cfg.location(Utc);
         cfg.database(pool);
         cfg.skip_test_database_check();
         cfg.paths(vec!["fixtures/todos.yml"]);
