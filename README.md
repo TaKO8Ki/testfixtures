@@ -10,7 +10,7 @@ sqlx = "0.3"
 
 ## Usage
 
-Create fixture files. Each file should contain data for a single table and have the name <table_name>.yml:
+Create fixture files. Each file should contain data for a single table and have the name <table_name>.yml.
 
 ```yml
 # todos.yml
@@ -20,6 +20,15 @@ Create fixture files. Each file should contain data for a single table and have 
 - id: 2
   description: meeting
   done: 0
+```
+
+If you need to write raw SQL, probably to call a function, prefix the value of the column with RAW=.
+
+```yml
+- id: 1
+  description: buy a new camera
+  done: 0
+  created_at: RAW=NOW()
 ```
 
 Your tests would look like this.
