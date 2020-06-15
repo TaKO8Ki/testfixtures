@@ -1,13 +1,19 @@
 use crate::loader::Loader;
 use crate::postgres::helper;
+use chrono::{Offset, TimeZone};
 use sqlx::{PgConnection, Postgres};
+use std::fmt::Display;
 
-pub type PostgresLoader = Loader<Postgres, PgConnection>;
+pub type PostgresLoader<O, Tz> = Loader<Postgres, PgConnection, O, Tz>;
 
-impl PostgresLoader {
-    pub async fn new<F>(options: F) -> anyhow::Result<PostgresLoader>
+impl<O, Tz> PostgresLoader<O, Tz>
+where
+    O: Offset + Display,
+    Tz: TimeZone<Offset = O>,
+{
+    pub async fn new<F>(options: F) -> anyhow::Result<PostgresLoader<O, Tz>>
     where
-        F: FnOnce(&mut PostgresLoader),
+        F: FnOnce(&mut PostgresLoader<O, Tz>),
     {
         let mut loader = Self::default();
         options(&mut loader);

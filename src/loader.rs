@@ -1,22 +1,26 @@
 use crate::fixture_file::{FixtureFile, InsertSQL};
 use crate::helper::Database as DB;
+use chrono::{DateTime, Offset, ParseError, TimeZone};
 use sqlx::{Connect, Connection, Database, Pool, Query};
+use std::fmt::Display;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 use yaml_rust::{Yaml, YamlLoader};
 
-pub struct Loader<T, C>
+pub struct Loader<T, C, O, Tz>
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    O: Offset,
+    Tz: TimeZone<Offset = O>,
 {
     pub pool: Option<Pool<C>>,
     pub helper: Option<Box<dyn DB<T, C> + Send + Sync>>,
-    pub fixtures_files: Vec<FixtureFile>,
+    pub fixture_files: Vec<FixtureFile>,
     pub skip_test_database_check: bool,
-    pub location: Option<String>,
+    pub location: Option<Tz>,
     pub template: Option<bool>,
     pub template_funcs: Option<String>,
     pub template_left_delim: Option<String>,
@@ -25,16 +29,18 @@ where
     pub template_data: Option<String>,
 }
 
-impl<T, C> Default for Loader<T, C>
+impl<T, C, O, Tz> Default for Loader<T, C, O, Tz>
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    O: Offset,
+    Tz: TimeZone<Offset = O>,
 {
     fn default() -> Self {
-        Loader::<T, C> {
+        Loader::<T, C, O, Tz> {
             pool: None,
             helper: None,
-            fixtures_files: vec![],
+            fixture_files: vec![],
             skip_test_database_check: false,
             location: None,
             template: None,
@@ -47,10 +53,12 @@ where
     }
 }
 
-impl<T, C> Loader<T, C>
+impl<T, C, O, Tz> Loader<T, C, O, Tz>
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    O: Offset + Display,
+    Tz: TimeZone<Offset = O>,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
         let mut queries = vec![];
@@ -61,7 +69,7 @@ where
 
         queries.append(&mut delete_queries);
 
-        for fixtures_file in &self.fixtures_files {
+        for fixtures_file in &self.fixture_files {
             for i in &fixtures_file.insert_sqls {
                 queries.push(sqlx::query(i.sql.as_str()))
             }
@@ -83,24 +91,30 @@ where
         self.skip_test_database_check = true
     }
 
-    pub fn location(&mut self, location: &str) {
-        let location = location.to_string();
+    pub fn location(&mut self, location: Tz) {
         self.location = Some(location)
     }
 
     pub fn files(&mut self, files: Vec<&str>) {
         let mut fixtures = Self::fixtures_from_files(files);
-        self.fixtures_files.append(&mut fixtures)
+        self.fixture_files.append(&mut fixtures)
     }
 
     pub fn directory(&mut self, directory: &str) {
         let mut fixtures = Self::fixtures_from_directory(directory);
-        self.fixtures_files.append(&mut fixtures)
+        self.fixture_files.append(&mut fixtures)
     }
 
     pub fn paths(&mut self, paths: Vec<&str>) {
         let mut fixtures = Self::fixtures_from_paths(paths);
-        self.fixtures_files.append(&mut fixtures)
+        self.fixture_files.append(&mut fixtures)
+    }
+
+    fn try_str_to_date(&self, s: String) -> Result<DateTime<Tz>, ParseError> {
+        self.location
+            .as_ref()
+            .unwrap()
+            .datetime_from_str(s.as_str(), "%Y/%m/%d %H:%M:%S")
     }
 
     fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile> {
@@ -150,8 +164,8 @@ where
     }
 
     pub(crate) fn build_insert_sqls(&mut self) {
-        for index in 0..self.fixtures_files.len() {
-            let file = &self.fixtures_files[index].content;
+        for index in 0..self.fixture_files.len() {
+            let file = &self.fixture_files[index].content;
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             buf_reader.read_to_string(&mut contents).unwrap();
@@ -159,8 +173,8 @@ where
 
             if let Yaml::Array(records) = &records[0] {
                 for record in records {
-                    let (sql, values) = self.build_insert_sql(&self.fixtures_files[index], record);
-                    self.fixtures_files[index].insert_sqls.push(InsertSQL {
+                    let (sql, values) = self.build_insert_sql(&self.fixture_files[index], record);
+                    self.fixture_files[index].insert_sqls.push(InsertSQL {
                         sql,
                         params: values,
                     });
@@ -176,7 +190,19 @@ where
         if let Yaml::Hash(hash) = &record {
             for (key, value) in hash {
                 let value = match value {
-                    Yaml::String(v) => format!(r#""{}""#, v.to_string()),
+                    Yaml::String(v) => {
+                        if v.starts_with("RAW=") {
+                            v.replace("RAW=", "")
+                        } else {
+                            match self.try_str_to_date(v.to_string()) {
+                                Ok(datetime) => format!(
+                                    r#""{}""#,
+                                    datetime.format("%Y/%m/%d %H:%M:%S").to_string()
+                                ),
+                                Err(_) => format!(r#""{}""#, v.to_string()),
+                            }
+                        }
+                    }
                     Yaml::Integer(v) => v.to_string(),
                     _ => "".to_string(),
                 };
@@ -186,6 +212,7 @@ where
                     _ => "".to_string(),
                 };
                 sql_columns.push(key);
+
                 if value.starts_with("RAW=") {
                     sql_values.push(value.replace("RAW=", ""));
                     continue;
@@ -196,16 +223,18 @@ where
             }
         };
 
+        // TODO: use query macro
         let sql_str = format!(
             "INSERT INTO {} ({}) VALUES ({})",
             file.file_stem(),
             sql_columns.join(", "),
             values.join(", "),
         );
+        println!("{}", sql_str);
         (sql_str, values)
     }
 
     fn delete_queries(&self) -> Vec<String> {
-        self.fixtures_files.iter().map(|x| (x.delete())).collect()
+        self.fixture_files.iter().map(|x| (x.delete())).collect()
     }
 }
