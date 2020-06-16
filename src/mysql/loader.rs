@@ -1,13 +1,19 @@
 use crate::loader::Loader;
 use crate::mysql::helper;
+use chrono::{Offset, TimeZone};
 use sqlx::{MySql, MySqlConnection};
+use std::fmt::Display;
 
-pub type MySqlLoader = Loader<MySql, MySqlConnection>;
+pub type MySqlLoader<O, Tz> = Loader<MySql, MySqlConnection, O, Tz>;
 
-impl MySqlLoader {
-    pub async fn new<F>(options: F) -> anyhow::Result<MySqlLoader>
+impl<O, Tz> MySqlLoader<O, Tz>
+where
+    O: Offset + Display,
+    Tz: TimeZone<Offset = O>,
+{
+    pub async fn new<F>(options: F) -> anyhow::Result<MySqlLoader<O, Tz>>
     where
-        F: FnOnce(&mut MySqlLoader),
+        F: FnOnce(&mut MySqlLoader<O, Tz>),
     {
         let mut loader = Self::default();
         options(&mut loader);
