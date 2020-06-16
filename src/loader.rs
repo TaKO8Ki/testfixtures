@@ -185,7 +185,6 @@ where
 
     fn build_insert_sql(&self, file: &FixtureFile, record: &Yaml) -> (String, Vec<String>) {
         let mut sql_columns = vec![];
-        let mut sql_values = vec![];
         let mut values = vec![];
         if let Yaml::Hash(hash) = &record {
             for (key, value) in hash {
@@ -212,13 +211,6 @@ where
                     _ => "".to_string(),
                 };
                 sql_columns.push(key);
-
-                if value.starts_with("RAW=") {
-                    sql_values.push(value.replace("RAW=", ""));
-                    continue;
-                }
-
-                sql_values.push("?".to_string());
                 values.push(value);
             }
         };
@@ -235,5 +227,64 @@ where
 
     fn delete_queries(&self) -> Vec<String> {
         self.fixture_files.iter().map(|x| (x.delete())).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::fixture_file::FixtureFile;
+    use crate::mysql::loader::MySqlLoader;
+    use chrono::Utc;
+    use std::fs::File;
+    use std::io::prelude::*;
+    use std::io::BufReader;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+    use yaml_rust::{Yaml, YamlLoader};
+
+    #[test]
+    fn test_location() {
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.location(Utc);
+        assert_eq!(loader.location.unwrap(), Utc);
+    }
+
+    #[test]
+    fn test_build_insert_sql() {
+        // different columns have different types.
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2006/01/02 15:04:00
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.location(Utc);
+        let fixture_file = FixtureFile {
+            path: tempfile.path().to_str().unwrap().to_string(),
+            file_name: tempfile
+                .path()
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string(),
+            content: File::open(tempfile).unwrap(),
+            insert_sqls: vec![],
+        };
+        let mut buf_reader = BufReader::new(&fixture_file.content);
+        let mut contents = String::new();
+        buf_reader.read_to_string(&mut contents).unwrap();
+        let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
+        if let Yaml::Array(records) = &records[0] {
+            let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
+            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (1, \"fizz\", \"2006/01/02 15:04:00\", NOW())", fixture_file.file_stem()));
+        }
     }
 }
