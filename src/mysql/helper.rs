@@ -30,15 +30,15 @@ impl DB<M, MySqlConnection> for MySql {
     }
 
     // TODO: complete this function
-    // async fn table_names(&self, pool: &Pool<C>) -> anyhow::Result<Vec<String>> {
-    //     let tables = sqlx::query!(
+    // async fn table_names(&self, pool: &MySqlPool) -> anyhow::Result<Vec<String>> {
+    //     let tables = sqlx::query_as(
     //         r#"
     //         SELECT table_name
     //         FROM information_schema.tables
     //         WHERE table_schema = ? AND table_type = 'BASE TABLE';
     //     "#,
-    //         "test"
     //     )
+    //     .bind("test")
     //     .fetch_all(pool)
     //     .await?;
 

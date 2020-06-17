@@ -42,7 +42,7 @@ impl DB<P, PgConnection> for Postgres {
     }
 
     // TODO: complete this function
-    // async fn table_names(&self, pool: &Pool<C>) -> anyhow::Result<Vec<String>> {
+    // async fn table_names(&self, pool: &PgPool) -> anyhow::Result<Vec<String>> {
     //     let tables = sqlx::query!(
     //         r#"
     //         SELECT table_name

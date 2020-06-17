@@ -10,7 +10,6 @@ where
 {
 	async fn init(&mut self, db: &Pool<C>) -> anyhow::Result<()>;
 
-	// TODO: complete this function
 	async fn database_name(&self, db: &Pool<C>) -> anyhow::Result<String>;
 
 	// TODO: complete this function

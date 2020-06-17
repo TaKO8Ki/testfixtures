@@ -266,7 +266,8 @@ mod tests {
         let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
         if let Yaml::Array(records) = &records[0] {
             let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
-            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (1, \"fizz\", \"2006/01/02 15:04:00\", NOW())", fixture_file.file_stem()));
+            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (?, ?, ?, NOW())", fixture_file.file_stem()));
+            assert_eq!(values, vec!["1", "fizz", "2006/01/02 15:04:00"])
         }
     }
 }
