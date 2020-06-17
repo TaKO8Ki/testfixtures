@@ -18,6 +18,6 @@ where
 	async fn with_transaction<'a>(
 		&self,
 		pool: &Pool<C>,
-		fixture_files: &Vec<FixtureFile>,
+		fixture_files: &[FixtureFile],
 	) -> anyhow::Result<()>;
 }

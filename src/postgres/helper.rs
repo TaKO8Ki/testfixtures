@@ -64,7 +64,7 @@ impl DB<P, PgConnection> for Postgres {
     async fn with_transaction<'b>(
         &self,
         pool: &PgPool,
-        fixture_files: &Vec<FixtureFile>,
+        fixture_files: &[FixtureFile],
     ) -> anyhow::Result<()> {
         let mut tx = pool.begin().await?;
         let result: anyhow::Result<()> = async {
