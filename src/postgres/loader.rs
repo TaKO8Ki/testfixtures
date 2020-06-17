@@ -8,8 +8,8 @@ pub type PostgresLoader<O, Tz> = Loader<Postgres, PgConnection, O, Tz>;
 
 impl<O, Tz> PostgresLoader<O, Tz>
 where
-    O: Offset + Display,
-    Tz: TimeZone<Offset = O>,
+    O: Offset + Display + Send + Sync + 'static,
+    Tz: TimeZone<Offset = O> + Sync + Send + 'static,
 {
     pub async fn new<F>(options: F) -> anyhow::Result<PostgresLoader<O, Tz>>
     where

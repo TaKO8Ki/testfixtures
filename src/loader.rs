@@ -1,4 +1,4 @@
-use crate::fixture_file::{FixtureFile, InsertSQL};
+use crate::fixture_file::{FixtureFile, InsertSQL, SqlParam};
 use crate::helper::Database as DB;
 use chrono::{DateTime, Offset, ParseError, TimeZone};
 use sqlx::{Connect, Connection, Database, Pool};
@@ -14,11 +14,11 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
     O: Offset,
-    Tz: TimeZone<Offset = O>,
+    Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub pool: Option<Pool<C>>,
-    pub helper: Option<Box<dyn DB<T, C>>>,
-    pub fixture_files: Vec<FixtureFile>,
+    pub helper: Option<Box<dyn DB<T, C, O, Tz>>>,
+    pub fixture_files: Vec<FixtureFile<Tz>>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
     pub template: Option<bool>,
@@ -34,7 +34,7 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
     O: Offset,
-    Tz: TimeZone<Offset = O>,
+    Tz: TimeZone<Offset = O> + Send + Sync,
 {
     fn default() -> Self {
         Loader::<T, C, O, Tz> {
@@ -57,8 +57,8 @@ impl<T, C, O, Tz> Loader<T, C, O, Tz>
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
-    O: Offset + Display,
-    Tz: TimeZone<Offset = O>,
+    O: Offset + Display + Send + Sync,
+    Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
         self.helper
@@ -103,8 +103,8 @@ where
             .datetime_from_str(s.as_str(), "%Y/%m/%d %H:%M:%S")
     }
 
-    fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile> {
-        let mut fixture_files: Vec<FixtureFile> = vec![];
+    fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile<Tz>> {
+        let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in files {
             let fixture = FixtureFile {
                 path: f.to_string(),
@@ -122,8 +122,8 @@ where
         fixture_files
     }
 
-    fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile> {
-        let mut fixture_files: Vec<FixtureFile> = vec![];
+    fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile<Tz>> {
+        let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in fs::read_dir(directory).unwrap() {
             let f = f.unwrap();
             let fixture = FixtureFile {
@@ -137,8 +137,8 @@ where
         fixture_files
     }
 
-    fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile> {
-        let mut fixture_files: Vec<FixtureFile> = vec![];
+    fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile<Tz>> {
+        let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for path in paths {
             if Path::new(path).is_dir() {
                 fixture_files.append(&mut Self::fixtures_from_directory(path))
@@ -169,7 +169,11 @@ where
         }
     }
 
-    fn build_insert_sql(&self, file: &FixtureFile, record: &Yaml) -> (String, Vec<String>) {
+    fn build_insert_sql(
+        &self,
+        file: &FixtureFile<Tz>,
+        record: &Yaml,
+    ) -> (String, Vec<SqlParam<Tz>>) {
         let mut sql_columns = vec![];
         let mut sql_values = vec![];
         let mut values = vec![];
@@ -181,23 +185,22 @@ where
                     _ => "".to_string(),
                 };
                 sql_columns.push(key);
-                let value = match value {
+                match value {
                     Yaml::String(v) => {
                         if v.starts_with("RAW=") {
                             sql_values.push(v.replace("RAW=", ""));
                             continue;
                         } else {
                             match self.try_str_to_date(v.to_string()) {
-                                Ok(datetime) => datetime.format("%Y/%m/%d %H:%M:%S").to_string(),
-                                Err(_) => v.to_string(),
+                                Ok(datetime) => values.push(SqlParam::Datetime(datetime)),
+                                Err(_) => values.push(SqlParam::String(v.to_string())),
                             }
                         }
                     }
-                    Yaml::Integer(v) => v.to_string(),
-                    _ => "".to_string(),
+                    Yaml::Integer(v) => values.push(SqlParam::Integer(*v as u32)),
+                    _ => (),
                 };
                 sql_values.push("?".to_string());
-                values.push(value);
             }
         };
 
@@ -213,8 +216,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::fixture_file::FixtureFile;
+    use crate::fixture_file::{FixtureFile, SqlParam};
     use crate::mysql::loader::MySqlLoader;
+    use chrono::prelude::*;
     use chrono::Utc;
     use std::fs::File;
     use std::io::prelude::*;
@@ -239,7 +243,7 @@ mod tests {
             r#"
         - id: 1
           description: fizz
-          created_at: 2006/01/02 15:04:00
+          created_at: 2020/01/01 01:01:01
           updated_at: RAW=NOW()"#
         )
         .unwrap();
@@ -266,7 +270,15 @@ mod tests {
         if let Yaml::Array(records) = &records[0] {
             let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
             assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (?, ?, ?, NOW())", fixture_file.file_stem()));
-            assert_eq!(values, vec!["1", "fizz", "2006/01/02 15:04:00"])
+            if let SqlParam::Integer(param) = &values[0] {
+                assert_eq!(*param, 1)
+            }
+            if let SqlParam::String(param) = &values[1] {
+                assert_eq!(*param, "fizz".to_string())
+            }
+            if let SqlParam::Datetime(param) = &values[2] {
+                assert_eq!(*param, Utc.ymd(2020, 1, 1).and_hms(1, 1, 1))
+            }
         }
     }
 }

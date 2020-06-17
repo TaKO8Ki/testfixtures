@@ -1,12 +1,12 @@
-use crate::fixture_file::FixtureFile;
+use crate::fixture_file::{FixtureFile, SqlParam};
 use crate::helper::Database as DB;
 use async_trait::async_trait;
+use chrono::{Offset, TimeZone};
 use sqlx::postgres::PgQueryAs;
 use sqlx::{
     arguments::Arguments, postgres::PgArguments, PgConnection, PgPool, Postgres as P, Query,
 };
 
-#[derive(Debug)]
 pub struct Postgres {
     pub tables: Vec<String>,
     // pub use_alter_constraint: bool,
@@ -17,11 +17,10 @@ pub struct Postgres {
     // pub tablesChecksum:           map[string]string
 }
 
-#[derive(Debug)]
-pub struct PgConstraint {
-    table_name: String,
-    constraint_name: String,
-}
+// pub struct PgConstraint {
+//     table_name: String,
+//     constraint_name: String,
+// }
 
 impl Default for Postgres {
     fn default() -> Self {
@@ -30,12 +29,15 @@ impl Default for Postgres {
 }
 
 #[async_trait]
-impl DB<P, PgConnection> for Postgres {
+impl<O, Tz> DB<P, PgConnection, O, Tz> for Postgres
+where
+    Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+    O: Offset + Sync + Send + 'static,
+{
     async fn init(&mut self, _pool: &PgPool) -> anyhow::Result<()> {
         Ok(())
     }
 
-    // TODO: complete this function
     async fn database_name(&self, pool: &PgPool) -> anyhow::Result<String> {
         let rec: (String,) = sqlx::query_as("SELECT DATABASE()").fetch_one(pool).await?;
         Ok(rec.0)
@@ -64,7 +66,7 @@ impl DB<P, PgConnection> for Postgres {
     async fn with_transaction<'b>(
         &self,
         pool: &PgPool,
-        fixture_files: &[FixtureFile],
+        fixture_files: &[FixtureFile<Tz>],
     ) -> anyhow::Result<()> {
         let mut tx = pool.begin().await?;
         let result: anyhow::Result<()> = async {
@@ -75,12 +77,16 @@ impl DB<P, PgConnection> for Postgres {
             queries.append(&mut delete_queries);
 
             for fixtures_file in fixture_files {
-                for i in &fixtures_file.insert_sqls {
+                for sql in &fixtures_file.insert_sqls {
                     let mut args = PgArguments::default();
-                    for i in &i.params {
-                        args.add(i)
+                    for param in &sql.params {
+                        match param {
+                            SqlParam::String(param) => args.add(param),
+                            SqlParam::Integer(param) => args.add(param),
+                            SqlParam::Datetime(param) => args.add(param.naive_local()),
+                        }
                     }
-                    let query = sqlx::query(i.sql.as_str()).bind_all(args);
+                    let query = sqlx::query(sql.sql.as_str()).bind_all(args);
                     queries.push(query)
                 }
             }
