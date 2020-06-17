@@ -201,7 +201,6 @@ where
             }
         };
 
-        // TODO: use query macro
         let sql_str = format!(
             "INSERT INTO {} ({}) VALUES ({})",
             file.file_stem(),
