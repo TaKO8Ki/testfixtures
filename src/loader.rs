@@ -1,7 +1,7 @@
 use crate::fixture_file::{FixtureFile, InsertSQL};
 use crate::helper::Database as DB;
 use chrono::{DateTime, Offset, ParseError, TimeZone};
-use sqlx::{Connect, Connection, Database, Pool, Query};
+use sqlx::{Connect, Connection, Database, Pool};
 use std::fmt::Display;
 use std::fs::{self, File};
 use std::io::prelude::*;
@@ -17,7 +17,7 @@ where
     Tz: TimeZone<Offset = O>,
 {
     pub pool: Option<Pool<C>>,
-    pub helper: Option<Box<dyn DB<T, C> + Send + Sync>>,
+    pub helper: Option<Box<dyn DB<T, C>>>,
     pub fixture_files: Vec<FixtureFile>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
@@ -61,24 +61,10 @@ where
     Tz: TimeZone<Offset = O>,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
-        let mut queries = vec![];
-
-        let delete_queries = self.delete_queries();
-        let mut delete_queries: Vec<Query<'_, T>> =
-            delete_queries.iter().map(|x| sqlx::query(x)).collect();
-
-        queries.append(&mut delete_queries);
-
-        for fixtures_file in &self.fixture_files {
-            for i in &fixtures_file.insert_sqls {
-                queries.push(sqlx::query(i.sql.as_str()))
-            }
-        }
-
         self.helper
             .as_ref()
             .unwrap()
-            .with_transaction(self.pool.as_ref().unwrap(), queries)
+            .with_transaction(self.pool.as_ref().unwrap(), &self.fixture_files)
             .await?;
         Ok(())
     }
@@ -185,32 +171,32 @@ where
 
     fn build_insert_sql(&self, file: &FixtureFile, record: &Yaml) -> (String, Vec<String>) {
         let mut sql_columns = vec![];
+        let mut sql_values = vec![];
         let mut values = vec![];
         if let Yaml::Hash(hash) = &record {
             for (key, value) in hash {
-                let value = match value {
-                    Yaml::String(v) => {
-                        if v.starts_with("RAW=") {
-                            v.replace("RAW=", "")
-                        } else {
-                            match self.try_str_to_date(v.to_string()) {
-                                Ok(datetime) => format!(
-                                    r#""{}""#,
-                                    datetime.format("%Y/%m/%d %H:%M:%S").to_string()
-                                ),
-                                Err(_) => format!(r#""{}""#, v.to_string()),
-                            }
-                        }
-                    }
-                    Yaml::Integer(v) => v.to_string(),
-                    _ => "".to_string(),
-                };
                 let key = match key {
                     Yaml::String(k) => k.to_string(),
                     Yaml::Integer(k) => k.to_string(),
                     _ => "".to_string(),
                 };
                 sql_columns.push(key);
+                let value = match value {
+                    Yaml::String(v) => {
+                        if v.starts_with("RAW=") {
+                            sql_values.push(v.replace("RAW=", ""));
+                            continue;
+                        } else {
+                            match self.try_str_to_date(v.to_string()) {
+                                Ok(datetime) => datetime.format("%Y/%m/%d %H:%M:%S").to_string(),
+                                Err(_) => v.to_string(),
+                            }
+                        }
+                    }
+                    Yaml::Integer(v) => v.to_string(),
+                    _ => "".to_string(),
+                };
+                sql_values.push("?".to_string());
                 values.push(value);
             }
         };
@@ -220,13 +206,9 @@ where
             "INSERT INTO {} ({}) VALUES ({})",
             file.file_stem(),
             sql_columns.join(", "),
-            values.join(", "),
+            sql_values.join(", "),
         );
         (sql_str, values)
-    }
-
-    fn delete_queries(&self) -> Vec<String> {
-        self.fixture_files.iter().map(|x| (x.delete())).collect()
     }
 }
 
