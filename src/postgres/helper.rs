@@ -63,7 +63,7 @@ where
     //     Ok(names)
     // }
 
-    async fn with_transaction<'b>(
+    async fn with_transaction(
         &self,
         pool: &PgPool,
         fixture_files: &[FixtureFile<Tz>],

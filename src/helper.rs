@@ -18,7 +18,7 @@ where
 	// TODO: complete this function
 	// async fn table_names(&self, db: &Pool<C>) -> anyhow::Result<Vec<String>>;
 
-	async fn with_transaction<'a>(
+	async fn with_transaction(
 		&self,
 		pool: &Pool<C>,
 		fixture_files: &[FixtureFile<Tz>],

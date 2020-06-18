@@ -270,7 +270,7 @@ mod tests {
                 Ok("test".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
@@ -305,7 +305,7 @@ mod tests {
                 Ok("test".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
@@ -503,7 +503,7 @@ mod tests {
                 Ok("test".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
@@ -537,7 +537,7 @@ mod tests {
                 Ok("fizz".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],

@@ -52,7 +52,7 @@ where
     //     Ok(names)
     // }
 
-    async fn with_transaction<'b>(
+    async fn with_transaction(
         &self,
         pool: &MySqlPool,
         fixture_files: &[FixtureFile<Tz>],
