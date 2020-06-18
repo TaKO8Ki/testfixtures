@@ -248,7 +248,7 @@ mod tests {
     use std::io::prelude::*;
     use std::io::BufReader;
     use std::io::Write;
-    use tempfile::NamedTempFile;
+    use tempfile::{tempdir, NamedTempFile};
     use yaml_rust::{Yaml, YamlLoader};
 
     #[test]
@@ -298,6 +298,68 @@ mod tests {
                 .to_str()
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn test_fixtures_from_directory() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.yml");
+        let mut file = File::create(file_path)?;
+        writeln!(
+            file,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let fixture_files =
+            MySqlLoader::<Utc, Utc>::fixtures_from_directory(dir.path().to_str().unwrap());
+        assert_eq!(fixture_files[0].file_name, "test.yml");
+        Ok(())
+    }
+
+    #[test]
+    fn test_fixtures_from_paths() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.yml");
+        let mut file = File::create(file_path)?;
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            file,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let fixture_files = MySqlLoader::<Utc, Utc>::fixtures_from_paths(vec![
+            dir.path().to_str().unwrap(),
+            tempfile.path().to_str().unwrap(),
+        ]);
+        assert_eq!(fixture_files[0].file_name, "test.yml");
+        assert_eq!(
+            fixture_files[1].file_name,
+            tempfile
+                .path()
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
+        Ok(())
     }
 
     #[test]
