@@ -62,4 +62,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --color always
+          args: --no-fail-fast --color always
