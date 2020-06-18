@@ -271,7 +271,7 @@ mod tests {
     fn test_skip_test_database_check() {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.skip_test_database_check();
-        assert!(loader.skip_test_database_check, true);
+        assert!(loader.skip_test_database_check);
     }
 
     #[test]
