@@ -241,15 +241,86 @@ mod tests {
     use crate::helper::Database as DB;
     use crate::mysql::loader::MySqlLoader;
     use async_trait::async_trait;
-    use chrono::prelude::*;
-    use chrono::Utc;
+    use chrono::{prelude::*, Utc};
     use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
-    use std::io::prelude::*;
-    use std::io::BufReader;
-    use std::io::Write;
+    use std::io::{prelude::*, BufReader, Write};
     use tempfile::{tempdir, NamedTempFile};
     use yaml_rust::{Yaml, YamlLoader};
+
+    #[async_std::test]
+    async fn test_load() -> anyhow::Result<()> {
+        pub struct TestLoadNormal {}
+        impl Default for TestLoadNormal {
+            fn default() -> Self {
+                TestLoadNormal {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadNormal
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("test".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestLoadNormal {}));
+        let result = loader.load().await;
+        assert!(result.is_ok());
+
+        pub struct TestLoadError {}
+        impl Default for TestLoadError {
+            fn default() -> Self {
+                TestLoadError {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadError
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("test".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Err(anyhow::anyhow!("error"))
+            }
+        }
+
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestLoadError {}));
+        let result = loader.load().await;
+        assert!(result.is_err());
+        Ok(())
+    }
 
     #[test]
     fn test_database() {
