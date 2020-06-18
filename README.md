@@ -78,6 +78,7 @@ mod tests {
 - [x] skip_test_database_check
 - [x] location
 - [x] load files from a directory
+- [x] path
 - [ ] yaml template
 
 # Reference
