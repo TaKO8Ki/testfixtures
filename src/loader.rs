@@ -241,21 +241,196 @@ mod tests {
     use crate::helper::Database as DB;
     use crate::mysql::loader::MySqlLoader;
     use async_trait::async_trait;
-    use chrono::prelude::*;
-    use chrono::Utc;
+    use chrono::{prelude::*, Utc};
     use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
-    use std::io::prelude::*;
-    use std::io::BufReader;
-    use std::io::Write;
-    use tempfile::NamedTempFile;
+    use std::io::{prelude::*, BufReader, Write};
+    use tempfile::{tempdir, NamedTempFile};
     use yaml_rust::{Yaml, YamlLoader};
+
+    #[async_std::test]
+    async fn test_load() -> anyhow::Result<()> {
+        pub struct TestLoadNormal {}
+        impl Default for TestLoadNormal {
+            fn default() -> Self {
+                TestLoadNormal {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadNormal
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("test".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestLoadNormal {}));
+        let result = loader.load().await;
+        assert!(result.is_ok());
+
+        pub struct TestLoadError {}
+        impl Default for TestLoadError {
+            fn default() -> Self {
+                TestLoadError {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadError
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("test".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Err(anyhow::anyhow!("error"))
+            }
+        }
+
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestLoadError {}));
+        let result = loader.load().await;
+        assert!(result.is_err());
+        Ok(())
+    }
 
     #[test]
     fn test_location() {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.location(Utc);
         assert_eq!(loader.location.unwrap(), Utc);
+    }
+
+    #[async_std::test]
+    async fn test_database() -> anyhow::Result<()> {
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        let database = MySqlPool::new("fizz").await?;
+        loader.database(database);
+        assert!(loader.pool.is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn test_skip_test_database_check() {
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.skip_test_database_check();
+        assert!(loader.skip_test_database_check);
+    }
+
+    #[test]
+    fn test_fixtures_from_files() {
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let fixture_files =
+            MySqlLoader::<Utc, Utc>::fixtures_from_files(vec![tempfile.path().to_str().unwrap()]);
+        assert_eq!(
+            fixture_files[0].file_name,
+            tempfile
+                .path()
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_fixtures_from_directory() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.yml");
+        let mut file = File::create(file_path)?;
+        writeln!(
+            file,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let fixture_files =
+            MySqlLoader::<Utc, Utc>::fixtures_from_directory(dir.path().to_str().unwrap());
+        assert_eq!(fixture_files[0].file_name, "test.yml");
+        Ok(())
+    }
+
+    #[test]
+    fn test_fixtures_from_paths() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.yml");
+        let mut file = File::create(file_path)?;
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            file,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let fixture_files = MySqlLoader::<Utc, Utc>::fixtures_from_paths(vec![
+            dir.path().to_str().unwrap(),
+            tempfile.path().to_str().unwrap(),
+        ]);
+        assert_eq!(fixture_files[0].file_name, "test.yml");
+        assert_eq!(
+            fixture_files[1].file_name,
+            tempfile
+                .path()
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
+        Ok(())
     }
 
     #[test]

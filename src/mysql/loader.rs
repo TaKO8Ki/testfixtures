@@ -28,3 +28,42 @@ where
         Ok(loader)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::mysql::loader::MySqlLoader;
+    use chrono::Utc;
+    use sqlx::MySqlPool;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[async_std::test]
+    async fn test_new() -> anyhow::Result<()> {
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+
+        let pool = MySqlPool::new("fizz").await?;
+        let loader = MySqlLoader::new(|cfg| {
+            cfg.location(Utc);
+            cfg.database(pool);
+            cfg.skip_test_database_check();
+            cfg.files(vec![tempfile.path().to_str().unwrap()]);
+        })
+        .await?;
+
+        assert_eq!(loader.location.unwrap(), Utc);
+        assert!(loader.pool.is_some());
+        assert!(loader.skip_test_database_check);
+        assert!(loader.helper.is_some());
+        assert_eq!(loader.fixture_files.len(), 1);
+        Ok(())
+    }
+}
