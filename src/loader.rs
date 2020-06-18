@@ -1,7 +1,8 @@
-use crate::fixture_file::{FixtureFile, InsertSQL};
+use crate::fixture_file::{FixtureFile, InsertSQL, SqlParam};
 use crate::helper::Database as DB;
 use chrono::{DateTime, Offset, ParseError, TimeZone};
-use sqlx::{Connect, Connection, Database, Pool, Query};
+use regex::Regex;
+use sqlx::{Connect, Connection, Database, Pool};
 use std::fmt::Display;
 use std::fs::{self, File};
 use std::io::prelude::*;
@@ -14,11 +15,11 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
     O: Offset,
-    Tz: TimeZone<Offset = O>,
+    Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub pool: Option<Pool<C>>,
-    pub helper: Option<Box<dyn DB<T, C> + Send + Sync>>,
-    pub fixture_files: Vec<FixtureFile>,
+    pub helper: Option<Box<dyn DB<T, C, O, Tz>>>,
+    pub fixture_files: Vec<FixtureFile<Tz>>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
     pub template: Option<bool>,
@@ -34,7 +35,7 @@ where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
     O: Offset,
-    Tz: TimeZone<Offset = O>,
+    Tz: TimeZone<Offset = O> + Send + Sync,
 {
     fn default() -> Self {
         Loader::<T, C, O, Tz> {
@@ -57,28 +58,18 @@ impl<T, C, O, Tz> Loader<T, C, O, Tz>
 where
     T: Database + Sync + Send,
     C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
-    O: Offset + Display,
-    Tz: TimeZone<Offset = O>,
+    O: Offset + Display + Send + Sync,
+    Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
-        let mut queries = vec![];
-
-        let delete_queries = self.delete_queries();
-        let mut delete_queries: Vec<Query<'_, T>> =
-            delete_queries.iter().map(|x| sqlx::query(x)).collect();
-
-        queries.append(&mut delete_queries);
-
-        for fixtures_file in &self.fixture_files {
-            for i in &fixtures_file.insert_sqls {
-                queries.push(sqlx::query(i.sql.as_str()))
-            }
+        if !self.skip_test_database_check {
+            self.ensure_test_database().await?
         }
 
         self.helper
             .as_ref()
             .unwrap()
-            .with_transaction(self.pool.as_ref().unwrap(), queries)
+            .with_transaction(self.pool.as_ref().unwrap(), &self.fixture_files)
             .await?;
         Ok(())
     }
@@ -117,8 +108,8 @@ where
             .datetime_from_str(s.as_str(), "%Y/%m/%d %H:%M:%S")
     }
 
-    fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile> {
-        let mut fixture_files: Vec<FixtureFile> = vec![];
+    fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile<Tz>> {
+        let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in files {
             let fixture = FixtureFile {
                 path: f.to_string(),
@@ -136,8 +127,8 @@ where
         fixture_files
     }
 
-    fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile> {
-        let mut fixture_files: Vec<FixtureFile> = vec![];
+    fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile<Tz>> {
+        let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in fs::read_dir(directory).unwrap() {
             let f = f.unwrap();
             let fixture = FixtureFile {
@@ -151,8 +142,8 @@ where
         fixture_files
     }
 
-    fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile> {
-        let mut fixture_files: Vec<FixtureFile> = vec![];
+    fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile<Tz>> {
+        let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for path in paths {
             if Path::new(path).is_dir() {
                 fixture_files.append(&mut Self::fixtures_from_directory(path))
@@ -183,58 +174,76 @@ where
         }
     }
 
-    fn build_insert_sql(&self, file: &FixtureFile, record: &Yaml) -> (String, Vec<String>) {
+    fn build_insert_sql(
+        &self,
+        file: &FixtureFile<Tz>,
+        record: &Yaml,
+    ) -> (String, Vec<SqlParam<Tz>>) {
         let mut sql_columns = vec![];
+        let mut sql_values = vec![];
         let mut values = vec![];
         if let Yaml::Hash(hash) = &record {
             for (key, value) in hash {
-                let value = match value {
+                match key {
+                    Yaml::String(k) => sql_columns.push(k.to_string()),
+                    Yaml::Integer(k) => sql_columns.push(k.to_string()),
+                    _ => (),
+                };
+                match value {
                     Yaml::String(v) => {
                         if v.starts_with("RAW=") {
-                            v.replace("RAW=", "")
+                            sql_values.push(v.replace("RAW=", ""));
+                            continue;
                         } else {
                             match self.try_str_to_date(v.to_string()) {
-                                Ok(datetime) => format!(
-                                    r#""{}""#,
-                                    datetime.format("%Y/%m/%d %H:%M:%S").to_string()
-                                ),
-                                Err(_) => format!(r#""{}""#, v.to_string()),
+                                Ok(datetime) => values.push(SqlParam::Datetime(datetime)),
+                                Err(_) => values.push(SqlParam::String(v.to_string())),
                             }
                         }
                     }
-                    Yaml::Integer(v) => v.to_string(),
-                    _ => "".to_string(),
+                    Yaml::Integer(v) => values.push(SqlParam::Integer(*v as u32)),
+                    _ => (),
                 };
-                let key = match key {
-                    Yaml::String(k) => k.to_string(),
-                    Yaml::Integer(k) => k.to_string(),
-                    _ => "".to_string(),
-                };
-                sql_columns.push(key);
-                values.push(value);
+                sql_values.push("?".to_string());
             }
         };
 
-        // TODO: use query macro
         let sql_str = format!(
             "INSERT INTO {} ({}) VALUES ({})",
             file.file_stem(),
             sql_columns.join(", "),
-            values.join(", "),
+            sql_values.join(", "),
         );
         (sql_str, values)
     }
 
-    fn delete_queries(&self) -> Vec<String> {
-        self.fixture_files.iter().map(|x| (x.delete())).collect()
+    async fn ensure_test_database(&self) -> anyhow::Result<()> {
+        let db_name = self
+            .helper
+            .as_ref()
+            .unwrap()
+            .database_name(self.pool.as_ref().unwrap())
+            .await?;
+        let re = Regex::new(r"^*?test$")?;
+        if !re.is_match(db_name.as_str()) {
+            return Err(anyhow::anyhow!(
+                "testfixtures: database \"{}\" does not appear to be a test database",
+                db_name
+            ));
+        }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::fixture_file::FixtureFile;
+    use crate::fixture_file::{FixtureFile, SqlParam};
+    use crate::helper::Database as DB;
     use crate::mysql::loader::MySqlLoader;
+    use async_trait::async_trait;
+    use chrono::prelude::*;
     use chrono::Utc;
+    use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -258,7 +267,7 @@ mod tests {
             r#"
         - id: 1
           description: fizz
-          created_at: 2006/01/02 15:04:00
+          created_at: 2020/01/01 01:01:01
           updated_at: RAW=NOW()"#
         )
         .unwrap();
@@ -284,7 +293,89 @@ mod tests {
         let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
         if let Yaml::Array(records) = &records[0] {
             let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
-            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (1, \"fizz\", \"2006/01/02 15:04:00\", NOW())", fixture_file.file_stem()));
+            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (?, ?, ?, NOW())", fixture_file.file_stem()));
+            if let SqlParam::Integer(param) = &values[0] {
+                assert_eq!(*param, 1)
+            }
+            if let SqlParam::String(param) = &values[1] {
+                assert_eq!(*param, "fizz".to_string())
+            }
+            if let SqlParam::Datetime(param) = &values[2] {
+                assert_eq!(*param, Utc.ymd(2020, 1, 1).and_hms(1, 1, 1))
+            }
         }
+    }
+
+    #[async_std::test]
+    async fn test_ensure_test_database() -> anyhow::Result<()> {
+        pub struct TestEnsureTestDatabaseNormal {}
+        impl Default for TestEnsureTestDatabaseNormal {
+            fn default() -> Self {
+                TestEnsureTestDatabaseNormal {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestEnsureTestDatabaseNormal
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("test".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestEnsureTestDatabaseNormal {}));
+        let result = loader.ensure_test_database().await?;
+        assert_eq!(result, ());
+
+        pub struct TestEnsureTestDatabaseError {}
+        impl Default for TestEnsureTestDatabaseError {
+            fn default() -> Self {
+                TestEnsureTestDatabaseError {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestEnsureTestDatabaseError
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("fizz".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestEnsureTestDatabaseError {}));
+        let result = loader.ensure_test_database().await;
+        assert!(result.is_err());
+
+        Ok(())
     }
 }

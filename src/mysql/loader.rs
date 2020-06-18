@@ -8,8 +8,8 @@ pub type MySqlLoader<O, Tz> = Loader<MySql, MySqlConnection, O, Tz>;
 
 impl<O, Tz> MySqlLoader<O, Tz>
 where
-    O: Offset + Display,
-    Tz: TimeZone<Offset = O>,
+    O: Offset + Display + Send + Sync + 'static,
+    Tz: TimeZone<Offset = O> + Send + Sync + 'static,
 {
     pub async fn new<F>(options: F) -> anyhow::Result<MySqlLoader<O, Tz>>
     where

@@ -36,30 +36,32 @@ If you need to write raw SQL, probably to call a function, prefix the value of t
 Your tests would look like this.
 
 ```rust
-use chrono::Utc;
-use sqlx::MySqlPool;
-use std::env;
-use testfixtures::MySqlLoader;
 
-#[async_std::main]
-#[paw::main]
-async fn test_function() -> anyhow::Result<()> {
-    let pool = MySqlPool::new(&env::var("DATABASE_URL")?).await?;
-    let loader = MySqlLoader::new(|cfg| {
-        cfg.location(Utc);
-        cfg.database(pool);
-        cfg.skip_test_database_check();
-        cfg.paths(vec!["fixtures/todos.yml"]);
-    })
-    .await?;
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+    use sqlx::MySqlPool;
+    use std::env;
+    use testfixtures::MySqlLoader;
 
-    // load your fixtures
-    loader.load().await?;
+    #[async_std::test]
+    async fn test_something() -> anyhow::Result<()> {
+        let pool = MySqlPool::new(&env::var("DATABASE_URL")?).await?;
+        let loader = MySqlLoader::new(|cfg| {
+            cfg.location(Utc);
+            cfg.database(pool);
+            cfg.skip_test_database_check();
+            cfg.paths(vec!["fixtures/todos.yml"]);
+        })
+        .await?;
 
-    // run your tests
-    test_something();
+        // load your fixtures
+        loader.load().await?;
 
-    Ok(())
+        // run your tests
+
+        Ok(())
+    }
 }
 
 ```
