@@ -10,6 +10,7 @@ edition = "2018"
 sqlx = { version = "0.3", features = [ "mysql", "postgres", "chrono" ] }
 yaml-rust = "0.4"
 anyhow = "1.0"
+async-std = { version = "1.5.0", features = [ "attributes" ] }
 futures = "0.1"
 async-trait = "0.1.31"
 regex = "1"

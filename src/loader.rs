@@ -1,6 +1,7 @@
 use crate::fixture_file::{FixtureFile, InsertSQL, SqlParam};
 use crate::helper::Database as DB;
 use chrono::{DateTime, Offset, ParseError, TimeZone};
+use regex::Regex;
 use sqlx::{Connect, Connection, Database, Pool};
 use std::fmt::Display;
 use std::fs::{self, File};
@@ -61,6 +62,10 @@ where
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
+        if !self.skip_test_database_check {
+            self.ensure_test_database().await?
+        }
+
         self.helper
             .as_ref()
             .unwrap()
@@ -179,12 +184,11 @@ where
         let mut values = vec![];
         if let Yaml::Hash(hash) = &record {
             for (key, value) in hash {
-                let key = match key {
-                    Yaml::String(k) => k.to_string(),
-                    Yaml::Integer(k) => k.to_string(),
-                    _ => "".to_string(),
+                match key {
+                    Yaml::String(k) => sql_columns.push(k.to_string()),
+                    Yaml::Integer(k) => sql_columns.push(k.to_string()),
+                    _ => (),
                 };
-                sql_columns.push(key);
                 match value {
                     Yaml::String(v) => {
                         if v.starts_with("RAW=") {
@@ -212,14 +216,34 @@ where
         );
         (sql_str, values)
     }
+
+    async fn ensure_test_database(&self) -> anyhow::Result<()> {
+        let db_name = self
+            .helper
+            .as_ref()
+            .unwrap()
+            .database_name(self.pool.as_ref().unwrap())
+            .await?;
+        let re = Regex::new(r"^*?test$")?;
+        if !re.is_match(db_name.as_str()) {
+            return Err(anyhow::anyhow!(
+                "testfixtures: database \"{}\" does not appear to be a test database",
+                db_name
+            ));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::fixture_file::{FixtureFile, SqlParam};
+    use crate::helper::Database as DB;
     use crate::mysql::loader::MySqlLoader;
+    use async_trait::async_trait;
     use chrono::prelude::*;
     use chrono::Utc;
+    use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -280,5 +304,78 @@ mod tests {
                 assert_eq!(*param, Utc.ymd(2020, 1, 1).and_hms(1, 1, 1))
             }
         }
+    }
+
+    #[async_std::test]
+    async fn test_ensure_test_database() -> anyhow::Result<()> {
+        pub struct TestEnsureTestDatabaseNormal {}
+        impl Default for TestEnsureTestDatabaseNormal {
+            fn default() -> Self {
+                TestEnsureTestDatabaseNormal {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestEnsureTestDatabaseNormal
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("test".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestEnsureTestDatabaseNormal {}));
+        let result = loader.ensure_test_database().await?;
+        assert_eq!(result, ());
+
+        pub struct TestEnsureTestDatabaseError {}
+        impl Default for TestEnsureTestDatabaseError {
+            fn default() -> Self {
+                TestEnsureTestDatabaseError {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestEnsureTestDatabaseError
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("fizz".to_string())
+            }
+
+            async fn with_transaction<'b>(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestEnsureTestDatabaseError {}));
+        let result = loader.ensure_test_database().await;
+        assert!(result.is_err());
+
+        Ok(())
     }
 }
