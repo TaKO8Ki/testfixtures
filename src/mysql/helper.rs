@@ -79,8 +79,7 @@ where
                             SqlParam::Datetime(param) => args.add(param.naive_local()),
                         }
                     }
-                    let query = sqlx::query(sql.sql.as_str()).bind_all(args);
-                    queries.push(query)
+                    queries.push(sqlx::query(sql.sql.as_str()).bind_all(args))
                 }
             }
 
