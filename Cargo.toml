@@ -8,7 +8,7 @@ license = "MIT"
 description = "A library for preparing test data from yaml files in Rust"
 repository = "https://github.com/TaKO8Ki/testfixtures"
 readme = "README.md"
-keywords = ["test", "testdata", "db"]
+keywords = ["test", "testdata", "db", "sqlx"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
