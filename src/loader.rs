@@ -252,10 +252,52 @@ mod tests {
     use yaml_rust::{Yaml, YamlLoader};
 
     #[test]
-    fn test_location() {
+    fn test_database() {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.location(Utc);
         assert_eq!(loader.location.unwrap(), Utc);
+    }
+
+    #[async_std::test]
+    async fn test_location() -> anyhow::Result<()> {
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        let database = MySqlPool::new("fizz").await?;
+        loader.database(database);
+        assert!(loader.pool.is_some());
+        Ok(())
+    }
+
+    #[test]
+    fn test_skip_test_database_check() {
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.skip_test_database_check();
+        assert!(loader.skip_test_database_check, true);
+    }
+
+    #[test]
+    fn test_fixtures_from_files() {
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let fixture_files =
+            MySqlLoader::<Utc, Utc>::fixtures_from_files(vec![tempfile.path().to_str().unwrap()]);
+        assert_eq!(
+            fixture_files[0].file_name,
+            tempfile
+                .path()
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
     }
 
     #[test]
