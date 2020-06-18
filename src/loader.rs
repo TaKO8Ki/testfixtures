@@ -323,14 +323,14 @@ mod tests {
     }
 
     #[test]
-    fn test_database() {
+    fn test_location() {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.location(Utc);
         assert_eq!(loader.location.unwrap(), Utc);
     }
 
     #[async_std::test]
-    async fn test_location() -> anyhow::Result<()> {
+    async fn test_database() -> anyhow::Result<()> {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         let database = MySqlPool::new("fizz").await?;
         loader.database(database);
