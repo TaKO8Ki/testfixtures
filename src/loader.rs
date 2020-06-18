@@ -8,6 +8,7 @@ use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
+use std::str::FromStr;
 use yaml_rust::{Yaml, YamlLoader};
 
 pub struct Loader<T, C, O, Tz>
@@ -202,6 +203,7 @@ where
                         }
                     }
                     Yaml::Integer(v) => values.push(SqlParam::Integer(*v as u32)),
+                    Yaml::Real(v) => values.push(SqlParam::Float(f32::from_str(v).unwrap())),
                     _ => (),
                 };
                 sql_values.push("?".to_string());
@@ -442,6 +444,7 @@ mod tests {
             r#"
         - id: 1
           description: fizz
+          price: 1.1
           created_at: 2020/01/01 01:01:01
           updated_at: RAW=NOW()"#
         )
@@ -466,16 +469,21 @@ mod tests {
         let mut contents = String::new();
         buf_reader.read_to_string(&mut contents).unwrap();
         let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
+        println!("{:?}", records);
         if let Yaml::Array(records) = &records[0] {
             let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
-            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (?, ?, ?, NOW())", fixture_file.file_stem()));
+            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW())", fixture_file.file_stem()));
+            assert_eq!(values.len(), 4);
             if let SqlParam::Integer(param) = &values[0] {
                 assert_eq!(*param, 1)
             }
             if let SqlParam::String(param) = &values[1] {
                 assert_eq!(*param, "fizz".to_string())
             }
-            if let SqlParam::Datetime(param) = &values[2] {
+            if let SqlParam::Float(param) = &values[2] {
+                assert_eq!(*param, 1.1)
+            }
+            if let SqlParam::Datetime(param) = &values[3] {
                 assert_eq!(*param, Utc.ymd(2020, 1, 1).and_hms(1, 1, 1))
             }
         }

@@ -77,6 +77,7 @@ where
                             SqlParam::String(param) => args.add(param),
                             SqlParam::Integer(param) => args.add(param),
                             SqlParam::Datetime(param) => args.add(param.naive_local()),
+                            SqlParam::Float(param) => args.add(param),
                         }
                     }
                     queries.push(sqlx::query(sql.sql.as_str()).bind_all(args))
