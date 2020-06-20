@@ -4,10 +4,10 @@ use chrono::{Offset, TimeZone};
 use sqlx::{Connect, Connection, Database as DB, Pool};
 
 #[async_trait]
-pub trait Database<T, C, O, Tz>
+pub trait Database<D, C, O, Tz>
 where
-	T: DB + Sync + Send,
-	C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+	D: DB + Sync + Send,
+	C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
 	O: Offset + Sync + Send,
 	Tz: TimeZone<Offset = O> + Send + Sync,
 {

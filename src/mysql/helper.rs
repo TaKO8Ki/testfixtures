@@ -103,8 +103,8 @@ where
         match result {
             Ok(_) => tx.commit().await?,
             Err(err) => {
-                eprintln!("testfixtures error: {}", err);
-                tx.rollback().await?
+                tx.rollback().await?;
+                panic!("testfixtures error: {}", err);
             }
         };
         Ok(())
@@ -136,6 +136,7 @@ mod tests {
         - id: 1
           description: fizz
           done: 1
+          progress: 10.5
           created_at: 2020/01/01 01:01:01"#
         )
         .unwrap();
@@ -164,15 +165,18 @@ mod tests {
             .await?;
 
         let mut cursor =
-            sqlx::query("SELECT id, description, done, created_at FROM todos").fetch(&pool);
+            sqlx::query("SELECT id, description, done, progress, created_at FROM todos")
+                .fetch(&pool);
         let row = cursor.next().await?.unwrap();
         let id: i16 = row.get("id");
         let description: String = row.get("description");
         let done: i16 = row.get("done");
+        let progress: f32 = row.get("progress");
         let created_at: NaiveDateTime = row.get("created_at");
         assert_eq!(id, 1);
         assert_eq!(description, "fizz");
         assert_eq!(done, 1);
+        assert_eq!(progress, 10.5);
         assert_eq!(created_at, NaiveDate::from_ymd(2020, 1, 1).and_hms(1, 1, 1));
         Ok(())
     }

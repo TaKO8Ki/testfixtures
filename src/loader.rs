@@ -11,15 +11,15 @@ use std::path::Path;
 use std::str::FromStr;
 use yaml_rust::{Yaml, YamlLoader};
 
-pub struct Loader<T, C, O, Tz>
+pub struct Loader<D, C, O, Tz>
 where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    D: Database + Sync + Send,
+    C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
     O: Offset,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub pool: Option<Pool<C>>,
-    pub helper: Option<Box<dyn DB<T, C, O, Tz>>>,
+    pub helper: Option<Box<dyn DB<D, C, O, Tz>>>,
     pub fixture_files: Vec<FixtureFile<Tz>>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
@@ -31,15 +31,15 @@ where
     pub template_data: Option<String>,
 }
 
-impl<T, C, O, Tz> Default for Loader<T, C, O, Tz>
+impl<D, C, O, Tz> Default for Loader<D, C, O, Tz>
 where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    D: Database + Sync + Send,
+    C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
     O: Offset,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     fn default() -> Self {
-        Loader::<T, C, O, Tz> {
+        Loader::<D, C, O, Tz> {
             pool: None,
             helper: None,
             fixture_files: vec![],
@@ -55,16 +55,18 @@ where
     }
 }
 
-impl<T, C, O, Tz> Loader<T, C, O, Tz>
+impl<D, C, O, Tz> Loader<D, C, O, Tz>
 where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    D: Database + Sync + Send,
+    C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
     O: Offset + Display + Send + Sync,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
-            self.ensure_test_database().await?
+            if let Err(err) = self.ensure_test_database().await {
+                panic!("testfixtures error: {}", err);
+            }
         }
 
         self.helper
@@ -229,7 +231,7 @@ where
         let re = Regex::new(r"^*?test$")?;
         if !re.is_match(db_name.as_str()) {
             return Err(anyhow::anyhow!(
-                "testfixtures: database \"{}\" does not appear to be a test database",
+                r#"'{}' does not appear to be a test database"#,
                 db_name
             ));
         }
