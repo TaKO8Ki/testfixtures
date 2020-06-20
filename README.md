@@ -108,7 +108,7 @@ files is a option for reading your fixture files.
 
 ```rust
 let loader = MySqlLoader::new(|cfg| {
-    cfg.paths(vec!["fizz.yml"]);
+    cfg.files(vec!["fizz.yml"]);
     // ...
 })
 .await?;
@@ -130,7 +130,7 @@ paths is a option that is a combination of files option and directory option.
 
 ```rust
 let loader = MySqlLoader::new(|cfg| {
-    cfg.directory(vec!["fizz", "buzz/todos.yml"]);
+    cfg.paths(vec!["fizz", "buzz/todos.yml"]);
     // ...
 })
 .await?;
