@@ -8,6 +8,7 @@
 [dependencies]
 testfixtures = "1.0"
 sqlx = "0.3"
+chrono = "0.4.11"
 ```
 
 ## Usage
