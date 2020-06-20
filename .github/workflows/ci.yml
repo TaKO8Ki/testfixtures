@@ -71,7 +71,7 @@ jobs:
       - name: Test
         uses: actions-rs/cargo@v1
         env: 
-          TEST_DATABASE_URL: mysql://root@127.0.0.1:3306/test
+          TEST_DATABASE_URL: mysql://root@127.0.0.1:3314/test
         with:
           command: test
           args: --no-fail-fast --color always
