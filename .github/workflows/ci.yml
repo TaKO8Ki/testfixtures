@@ -40,7 +40,7 @@ jobs:
     services:
       mysql:
         image: mysql:5.7
-        environment:
+        env:
           MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
         ports:
           - "3314:3306"
