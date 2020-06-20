@@ -46,7 +46,7 @@ jobs:
         ports:
           - "3314:3306"
         volumes:
-          - ${{ github.workspace }}/initdb.d:/docker-entrypoint-initdb.d
+          - ${{ github.workspace }}initdb.d:/docker-entrypoint-initdb.d
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
