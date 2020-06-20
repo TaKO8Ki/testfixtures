@@ -469,7 +469,6 @@ mod tests {
         let mut contents = String::new();
         buf_reader.read_to_string(&mut contents).unwrap();
         let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
-        println!("{:?}", records);
         if let Yaml::Array(records) = &records[0] {
             let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
             assert_eq!(sql_str, format!("INSERT INTO {} (id, description, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW())", fixture_file.file_stem()));
