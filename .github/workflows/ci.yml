@@ -37,6 +37,15 @@ jobs:
   build_and_test:
     name: Build and Test
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: "test"
+        ports:
+          - "3314:3306"
+        options: -v ${{ github.workspace }}/initdb.d:/docker-entrypoint-initdb.d
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
@@ -58,8 +67,16 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
+      - name: Initialize DB
+        run: sh scripts/initialize.sh
+        env:
+          INIT_TEST_DB_PATH: ${{ github.workspace }}/initdb.d/create_test_table.sql
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 3314
       - name: Test
         uses: actions-rs/cargo@v1
+        env: 
+          TEST_DB_URL: mysql://root@127.0.0.1:3314/test
         with:
           command: test
-          args: --color always
+          args: --no-fail-fast --color always

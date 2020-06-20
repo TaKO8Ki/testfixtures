@@ -4,10 +4,10 @@ use chrono::{Offset, TimeZone};
 use sqlx::{Connect, Connection, Database as DB, Pool};
 
 #[async_trait]
-pub trait Database<T, C, O, Tz>
+pub trait Database<D, C, O, Tz>
 where
-	T: DB + Sync + Send,
-	C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+	D: DB + Sync + Send,
+	C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
 	O: Offset + Sync + Send,
 	Tz: TimeZone<Offset = O> + Send + Sync,
 {
@@ -18,7 +18,7 @@ where
 	// TODO: complete this function
 	// async fn table_names(&self, db: &Pool<C>) -> anyhow::Result<Vec<String>>;
 
-	async fn with_transaction<'a>(
+	async fn with_transaction(
 		&self,
 		pool: &Pool<C>,
 		fixture_files: &[FixtureFile<Tz>],

@@ -65,6 +65,90 @@ mod tests {
 }
 
 ```
+## Options
+
+### database(required)
+database is a option for passing db connection pool to a Loader.
+
+```rust
+let pool = MySqlPool::new(&env::var("DATABASE_URL")?).await?;
+let loader = MySqlLoader::new(|cfg| {
+    cfg.database(pool);
+    // ...
+})
+.await?;
+```
+
+### location(required)
+location is a option for setting timezone.
+
+```rust
+use chrono::Utc;
+
+let loader = MySqlLoader::new(|cfg| {
+    cfg.location(Utc);
+    // ...
+})
+.await?;
+```
+
+### skip_test_database_check(optional)
+skip_test_database_check is a option for setting a flag for checking if database name ends with "test".
+
+```rust
+let loader = MySqlLoader::new(|cfg| {
+    cfg.skip_test_database_check();
+    // ...
+})
+.await?;
+```
+
+### files(optional)
+files is a option for reading your fixture files.
+
+```rust
+let loader = MySqlLoader::new(|cfg| {
+    cfg.files(vec!["fizz.yml"]);
+    // ...
+})
+.await?;
+```
+
+### directory(optional)
+files is a option for reading your fixture files in a directory.
+
+```rust
+let loader = MySqlLoader::new(|cfg| {
+    cfg.directory("fixture");
+    // ...
+})
+.await?;
+```
+
+### paths(optional)
+paths is a option that is a combination of files option and directory option.
+
+```rust
+let loader = MySqlLoader::new(|cfg| {
+    cfg.paths(vec!["fizz", "buzz/todos.yml"]);
+    // ...
+})
+.await?;
+```
+
+## Contribute
+
+```sh
+# setup test db
+$ make db
+
+# load environment variables
+$ make env
+$ direnv allow # https://github.com/direnv/direnv
+
+# run all tests
+$ make test
+```
 
 ## Implemation status
 ### Database
@@ -77,9 +161,10 @@ mod tests {
 - [x] load files
 - [x] skip_test_database_check
 - [x] location
-- [x] load files from a directory
-- [x] path
-- [ ] yaml template
+- [x] directory
+- [x] paths
+- [ ] template
 
-# Reference
+
+## Reference
 https://github.com/go-testfixtures/testfixtures

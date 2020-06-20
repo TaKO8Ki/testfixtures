@@ -1,4 +1,6 @@
 /target
+.envrc
+.env
 
 
 #Added by cargo

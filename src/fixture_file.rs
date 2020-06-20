@@ -21,6 +21,7 @@ where
     String(String),
     Datetime(DateTime<Tz>),
     Integer(u32),
+    Float(f32),
 }
 
 impl<Tz> FixtureFile<Tz>

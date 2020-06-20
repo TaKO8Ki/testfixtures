@@ -8,17 +8,18 @@ use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
+use std::str::FromStr;
 use yaml_rust::{Yaml, YamlLoader};
 
-pub struct Loader<T, C, O, Tz>
+pub struct Loader<D, C, O, Tz>
 where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    D: Database + Sync + Send,
+    C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
     O: Offset,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub pool: Option<Pool<C>>,
-    pub helper: Option<Box<dyn DB<T, C, O, Tz>>>,
+    pub helper: Option<Box<dyn DB<D, C, O, Tz>>>,
     pub fixture_files: Vec<FixtureFile<Tz>>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
@@ -30,15 +31,15 @@ where
     pub template_data: Option<String>,
 }
 
-impl<T, C, O, Tz> Default for Loader<T, C, O, Tz>
+impl<D, C, O, Tz> Default for Loader<D, C, O, Tz>
 where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    D: Database + Sync + Send,
+    C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
     O: Offset,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     fn default() -> Self {
-        Loader::<T, C, O, Tz> {
+        Loader::<D, C, O, Tz> {
             pool: None,
             helper: None,
             fixture_files: vec![],
@@ -54,16 +55,18 @@ where
     }
 }
 
-impl<T, C, O, Tz> Loader<T, C, O, Tz>
+impl<D, C, O, Tz> Loader<D, C, O, Tz>
 where
-    T: Database + Sync + Send,
-    C: Connection<Database = T> + Connect<Database = T> + Sync + Send,
+    D: Database + Sync + Send,
+    C: Connection<Database = D> + Connect<Database = D> + Sync + Send,
     O: Offset + Display + Send + Sync,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
-            self.ensure_test_database().await?
+            if let Err(err) = self.ensure_test_database().await {
+                panic!("testfixtures error: {}", err);
+            }
         }
 
         self.helper
@@ -202,6 +205,7 @@ where
                         }
                     }
                     Yaml::Integer(v) => values.push(SqlParam::Integer(*v as u32)),
+                    Yaml::Real(v) => values.push(SqlParam::Float(f32::from_str(v).unwrap())),
                     _ => (),
                 };
                 sql_values.push("?".to_string());
@@ -227,7 +231,7 @@ where
         let re = Regex::new(r"^*?test$")?;
         if !re.is_match(db_name.as_str()) {
             return Err(anyhow::anyhow!(
-                "testfixtures: database \"{}\" does not appear to be a test database",
+                r#"'{}' does not appear to be a test database"#,
                 db_name
             ));
         }
@@ -270,7 +274,7 @@ mod tests {
                 Ok("test".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
@@ -305,7 +309,7 @@ mod tests {
                 Ok("test".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
@@ -442,6 +446,7 @@ mod tests {
             r#"
         - id: 1
           description: fizz
+          price: 1.1
           created_at: 2020/01/01 01:01:01
           updated_at: RAW=NOW()"#
         )
@@ -468,14 +473,18 @@ mod tests {
         let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
         if let Yaml::Array(records) = &records[0] {
             let (sql_str, values) = loader.build_insert_sql(&fixture_file, &records[0]);
-            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, created_at, updated_at) VALUES (?, ?, ?, NOW())", fixture_file.file_stem()));
+            assert_eq!(sql_str, format!("INSERT INTO {} (id, description, price, created_at, updated_at) VALUES (?, ?, ?, ?, NOW())", fixture_file.file_stem()));
+            assert_eq!(values.len(), 4);
             if let SqlParam::Integer(param) = &values[0] {
                 assert_eq!(*param, 1)
             }
             if let SqlParam::String(param) = &values[1] {
                 assert_eq!(*param, "fizz".to_string())
             }
-            if let SqlParam::Datetime(param) = &values[2] {
+            if let SqlParam::Float(param) = &values[2] {
+                assert_eq!(*param, 1.1)
+            }
+            if let SqlParam::Datetime(param) = &values[3] {
                 assert_eq!(*param, Utc.ymd(2020, 1, 1).and_hms(1, 1, 1))
             }
         }
@@ -503,7 +512,7 @@ mod tests {
                 Ok("test".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
@@ -537,7 +546,7 @@ mod tests {
                 Ok("fizz".to_string())
             }
 
-            async fn with_transaction<'b>(
+            async fn with_transaction(
                 &self,
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
