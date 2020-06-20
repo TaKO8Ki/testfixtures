@@ -67,7 +67,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-      - run: sh initdb.d/initialize.sh
+      - run: sh scripts/initialize.sh
         env:
           INIT_TEST_DB_PATH: ${{ github.workspace }}/initdb.d/create_test_table.sql
           TEST_DB_HOST: 127.0.0.1
