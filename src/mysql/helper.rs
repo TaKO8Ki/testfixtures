@@ -125,7 +125,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_with_transaction() -> anyhow::Result<()> {
-        let pool = MySqlPool::new(&env::var("TEST_DATABASE_URL")?).await?;
+        let pool = MySqlPool::new("mysql://root@127.0.0.1:3314/test").await?;
         let dir = tempdir()?;
         let fixture_file_path = dir.path().join("todos.yml");
         let file_path = dir.path().join("todos.yml");
