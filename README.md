@@ -161,9 +161,9 @@ $ make test
 - [x] load files
 - [x] skip_test_database_check
 - [x] location
-- [x] load files from a directory
-- [x] path
-- [ ] yaml template
+- [x] directory
+- [x] paths
+- [ ] template
 
 
 ## Reference
