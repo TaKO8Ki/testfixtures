@@ -42,8 +42,11 @@ jobs:
         image: mysql:5.7
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: "test"
         ports:
           - 3306
+        volumes:
+          - ./initdb.d:/docker-entrypoint-initdb.d
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
