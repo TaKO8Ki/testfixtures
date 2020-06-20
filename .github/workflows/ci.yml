@@ -69,11 +69,13 @@ jobs:
           command: build
       - run: sh initdb.d/insert_test_data.sh
         env:
-          INITDB_PATH: ${{ github.workspace }}/initdb.d/create_test_table.sql
+          INIT_TEST_DB_PATH: ${{ github.workspace }}/initdb.d/create_test_table.sql
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 3314
       - name: Test
         uses: actions-rs/cargo@v1
         env: 
-          TEST_DATABASE_URL: mysql://root@127.0.0.1:3314/test
+          TEST_DB_URL: mysql://root@127.0.0.1:3314/test
         with:
           command: test
           args: --no-fail-fast --color always
