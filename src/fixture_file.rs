@@ -6,10 +6,10 @@ pub struct FixtureFile<Tz: TimeZone + Send + Sync> {
     pub path: String,
     pub file_name: String,
     pub content: File,
-    pub insert_sqls: Vec<InsertSQL<Tz>>,
+    pub insert_sqls: Vec<InsertSql<Tz>>,
 }
 
-pub struct InsertSQL<Tz: TimeZone + Send + Sync> {
+pub struct InsertSql<Tz: TimeZone + Send + Sync> {
     pub sql: String,
     pub params: Vec<SqlParam<Tz>>,
 }

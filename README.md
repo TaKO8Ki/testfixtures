@@ -1,6 +1,9 @@
 # [WIP] testfixtures
 
-![](https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master) ![img](https://img.shields.io/github/license/TaKO8Ki/testfixtures)
+[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE)
+
+[build]: https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master
+[license]: https://img.shields.io/github/license/TaKO8Ki/testfixtures
 
 ## Dependencies
 

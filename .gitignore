@@ -1,6 +1,7 @@
 /target
 .envrc
 .env
+Cargo.lock
 
 
 #Added by cargo

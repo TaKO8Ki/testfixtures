@@ -1,4 +1,4 @@
-use crate::fixture_file::{FixtureFile, InsertSQL, SqlParam};
+use crate::fixture_file::{FixtureFile, InsertSql, SqlParam};
 use crate::helper::Database as DB;
 use chrono::{DateTime, Offset, ParseError, TimeZone};
 use regex::Regex;
@@ -168,7 +168,7 @@ where
             if let Yaml::Array(records) = &records[0] {
                 for record in records {
                     let (sql, values) = self.build_insert_sql(&self.fixture_files[index], record);
-                    self.fixture_files[index].insert_sqls.push(InsertSQL {
+                    self.fixture_files[index].insert_sqls.push(InsertSql {
                         sql,
                         params: values,
                     });
