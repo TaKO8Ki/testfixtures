@@ -67,9 +67,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-      - run: |
-          ls ${{ github.workspace }}/initdb.d
-          cat ${{ github.workspace }}/initdb.d/create_test_table.sql
+      - run: mysql --host 127.0.0.1 --port 3314 -uroot test < ${{ github.workspace }}/initdb.d/create_test_table.sql
       - name: Test
         uses: actions-rs/cargo@v1
         env: 
