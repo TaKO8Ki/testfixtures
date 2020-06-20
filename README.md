@@ -65,9 +65,9 @@ mod tests {
 }
 
 ```
-### Options
+## Options
 
-#### database(required)
+### database(required)
 database is a option for passing db connection pool to a Loader.
 
 ```rust
@@ -79,7 +79,7 @@ let loader = MySqlLoader::new(|cfg| {
 .await?;
 ```
 
-#### location(required)
+### location(required)
 location is a option for setting timezone.
 
 ```rust
@@ -92,7 +92,7 @@ let loader = MySqlLoader::new(|cfg| {
 .await?;
 ```
 
-#### skip_test_database_check(optional)
+### skip_test_database_check(optional)
 skip_test_database_check is a option for setting a flag for checking if database name ends with "test".
 
 ```rust
@@ -103,7 +103,7 @@ let loader = MySqlLoader::new(|cfg| {
 .await?;
 ```
 
-#### files(optional)
+### files(optional)
 files is a option for reading your fixture files.
 
 ```rust
@@ -114,7 +114,7 @@ let loader = MySqlLoader::new(|cfg| {
 .await?;
 ```
 
-#### directory(optional)
+### directory(optional)
 files is a option for reading your fixture files in a directory.
 
 ```rust
@@ -125,7 +125,7 @@ let loader = MySqlLoader::new(|cfg| {
 .await?;
 ```
 
-#### paths(optional)
+### paths(optional)
 paths is a option that is a combination of files option and directory option.
 
 ```rust
