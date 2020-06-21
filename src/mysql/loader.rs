@@ -16,10 +16,18 @@ where
     ///
     /// # Example
     /// ```rust
-    /// let loader = MySqlLoader::new(|cfg| {
-    ///    // ...
-    /// })
-    /// .await?;
+    /// #[cfg(test)]
+    /// mod tests {
+    ///     use testfixtures::MySqlLoader;
+    ///     #[async_std::test]
+    ///     async fn test_something() -> anyhow::Result<()> {
+    ///         let loader = MySqlLoader::new(|cfg| {
+    ///             //...
+    ///         })
+    ///         .await?;
+    ///         Ok(())
+    ///     }
+    /// }
     /// ```
     pub async fn new<F>(options: F) -> anyhow::Result<MySqlLoader<O, Tz>>
     where
