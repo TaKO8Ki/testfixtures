@@ -4,8 +4,9 @@ use chrono::{Offset, TimeZone};
 use sqlx::{PgConnection, Postgres};
 use std::fmt::Display;
 
+// TODO: Complete this type.
 /// An alias for [Loader](testfixtures::Loader), specialized for **Postgres**.
-pub type PostgresLoader<O, Tz> = Loader<Postgres, PgConnection, O, Tz>;
+pub(crate) type PostgresLoader<O, Tz> = Loader<Postgres, PgConnection, O, Tz>;
 
 impl<O, Tz> PostgresLoader<O, Tz>
 where
