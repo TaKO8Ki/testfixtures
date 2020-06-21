@@ -7,6 +7,7 @@ use sqlx::{
     arguments::Arguments, postgres::PgArguments, PgConnection, PgPool, Postgres as P, Query,
 };
 
+/// **Postgres** helper.
 pub struct Postgres {
     pub tables: Vec<String>,
     // pub use_alter_constraint: bool,

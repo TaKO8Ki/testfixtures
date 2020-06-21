@@ -1,9 +1,10 @@
 # [WIP] testfixtures
 
-[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE)
+[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![docs]](#) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE) 
 
-[build]: https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master
+[build]: https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master?logo=github
 [license]: https://img.shields.io/github/license/TaKO8Ki/testfixtures
+[docs]: https://img.shields.io/badge/docs.rs-testfixtures-8da0cb?labelColor=555555&logo=rust
 
 ## Dependencies
 

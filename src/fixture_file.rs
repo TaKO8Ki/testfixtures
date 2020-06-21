@@ -2,6 +2,7 @@ use chrono::{DateTime, TimeZone};
 use std::fs::File;
 use std::path::Path;
 
+/// A loaded fixture file.
 pub struct FixtureFile<Tz: TimeZone + Send + Sync> {
     pub path: String,
     pub file_name: String,
@@ -9,11 +10,13 @@ pub struct FixtureFile<Tz: TimeZone + Send + Sync> {
     pub insert_sqls: Vec<InsertSql<Tz>>,
 }
 
+/// SQL query and parameters.
 pub struct InsertSql<Tz: TimeZone + Send + Sync> {
     pub sql: String,
     pub params: Vec<SqlParam<Tz>>,
 }
 
+/// SQL parameter types.
 pub enum SqlParam<Tz>
 where
     Tz: TimeZone + Send + Sync,
