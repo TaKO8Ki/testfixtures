@@ -4,7 +4,7 @@ use chrono::{Offset, TimeZone};
 use sqlx::{MySql, MySqlConnection};
 use std::fmt::Display;
 
-/// An alias for [Loader](testfixtures::Loader), specialized for **MySQL**.
+/// An alias for [Loader](crate::loader::Loader), specialized for **MySQL**.
 pub type MySqlLoader<O, Tz> = Loader<MySql, MySqlConnection, O, Tz>;
 
 impl<O, Tz> MySqlLoader<O, Tz>
@@ -12,7 +12,7 @@ where
     O: Offset + Display + Send + Sync + 'static,
     Tz: TimeZone<Offset = O> + Send + Sync + 'static,
 {
-    /// Creates a Loader, specialized for MySQL and Set options.
+    /// Creates a [Loader](crate::loader::Loader), specialized for **MySQL** and Set options.
     ///
     /// # Example
     /// ```rust

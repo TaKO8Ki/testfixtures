@@ -140,7 +140,7 @@ where
         fixture_files
     }
 
-    /// Set fixture file content from a directory to FixtureFile struct.
+    /// Set fixture file content from a directory to [FixtureFile](crate::fixture_file::FixtureFile) struct.
     fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile<Tz>> {
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in fs::read_dir(directory).unwrap() {
@@ -156,7 +156,7 @@ where
         fixture_files
     }
 
-    /// Set fixture file content from a directory to FixtureFile struct.
+    /// Set fixture file content from a directory to [FixtureFile](crate::fixture_file::FixtureFile) struct.
     fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile<Tz>> {
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for path in paths {
