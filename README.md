@@ -8,13 +8,6 @@
 
 ## Dependencies
 
-```toml
-[dependencies]
-testfixtures = "1.0"
-sqlx = "0.3"
-chrono = "0.4.11"
-```
-
 ## Install
 
 This crate is compatible with the async-std and tokio runtimes.
@@ -24,6 +17,8 @@ async-std
 ```toml
 [dependencies]
 testfixtures = "0.1"
+sqlx = "0.3"
+chrono = "0.4.11"
 ```
 
 tokio
@@ -31,6 +26,8 @@ tokio
 ```toml
 [dependencies]
 testfixtures = { version = "0.1", default-features = false, features = [ "runtime-tokio" ] }
+sqlx = { version = "0.3", default-features = false, features = [ "runtime-tokio", "macros" ] }
+chrono = "0.4.11"
 ```
 
 ## Usage
