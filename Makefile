@@ -1,9 +1,9 @@
 test:
-    cargo test --no-fail-fast -- --nocapture 
+	cargo test --no-fail-fast -- --nocapture 
 db:
-    docker-compose up -d
+	docker-compose up -d
 env:
-    cp .env.example .env
-    cp .envrc.example .envrc
+	cp .env.example .env
+	cp .envrc.example .envrc
 doc:
-    cargo doc --no-deps --open
+	cargo doc --no-deps --open
