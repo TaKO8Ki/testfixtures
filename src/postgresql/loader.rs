@@ -1,11 +1,11 @@
 use crate::loader::Loader;
-use crate::postgres::helper;
+use crate::postgresql::helper;
 use chrono::{Offset, TimeZone};
 use sqlx::{PgConnection, Postgres};
 use std::fmt::Display;
 
 // TODO: Complete this type.
-/// An alias for [Loader](crate::loader::Loader), specialized for **Postgres**.
+/// An alias for [Loader](crate::loader::Loader), specialized for **PostgreSQL**.
 pub(crate) type PostgresLoader<O, Tz> = Loader<Postgres, PgConnection, O, Tz>;
 
 impl<O, Tz> PostgresLoader<O, Tz>
@@ -19,7 +19,7 @@ where
     {
         let mut loader = Self::default();
         options(&mut loader);
-        loader.helper = Some(Box::new(helper::Postgres { tables: vec![] }));
+        loader.helper = Some(Box::new(helper::PostgreSql { tables: vec![] }));
         loader.build_insert_sqls();
         loader
             .helper

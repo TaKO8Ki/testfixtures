@@ -7,8 +7,8 @@ use sqlx::{
     arguments::Arguments, postgres::PgArguments, PgConnection, PgPool, Postgres as P, Query,
 };
 
-/// **Postgres** helper.
-pub struct Postgres {
+/// **PostgreSQL** helper.
+pub struct PostgreSql {
     pub tables: Vec<String>,
     // pub use_alter_constraint: bool,
     // pub skip_reset_sequences: bool,
@@ -23,14 +23,14 @@ pub struct Postgres {
 //     constraint_name: String,
 // }
 
-impl Default for Postgres {
+impl Default for PostgreSql {
     fn default() -> Self {
-        Postgres { tables: vec![] }
+        PostgreSql { tables: vec![] }
     }
 }
 
 #[async_trait]
-impl<O, Tz> DB<P, PgConnection, O, Tz> for Postgres
+impl<O, Tz> DB<P, PgConnection, O, Tz> for PostgreSql
 where
     Tz: TimeZone<Offset = O> + Send + Sync + 'static,
     O: Offset + Sync + Send + 'static,
