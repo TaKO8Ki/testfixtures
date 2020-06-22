@@ -45,7 +45,7 @@ mod fixture_file;
 mod helper;
 mod loader;
 mod mysql;
-mod postgres;
+// mod postgresql;
 
 // reexport key APIs
 pub use fixture_file::{FixtureFile, InsertSql, SqlParam};
@@ -53,5 +53,5 @@ pub use helper::Database;
 pub use loader::Loader;
 pub use mysql::helper::MySql;
 pub use mysql::loader::MySqlLoader;
-pub use postgres::helper::Postgres;
+// pub use postgresql::helper::PostgreSql;
 // pub use postgres::loader::PostgresLoader;
