@@ -15,6 +15,24 @@ sqlx = "0.3"
 chrono = "0.4.11"
 ```
 
+## Install
+
+This crate is compatible with the async-std and tokio runtimes.
+
+async-std
+
+```toml
+[dependencies]
+testfixtures = "0.1"
+```
+
+tokio
+
+```toml
+[dependencies]
+testfixtures = { version = "0.1", default-features = false, features = [ "runtime-tokio" ] }
+```
+
 ## Usage
 
 Create fixture files. Each file should contain data for a certain table and have the name <table_name>.yml.
