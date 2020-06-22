@@ -5,6 +5,16 @@
 //! This crate is a Rust library for preparing test data from yaml files.
 //!
 //! ## Examples
+//! `todos.yml`
+//! ```yml
+//! - id: 1
+//!   description: buy a new camera
+//!   done: 0
+//! - id: 2
+//!   description: meeting
+//!   done: 0
+//! ```
+//!
 //!  ```rust
 //! #[cfg(test)]
 //! mod tests {

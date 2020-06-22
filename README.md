@@ -19,8 +19,8 @@ chrono = "0.4.11"
 
 Create fixture files. Each file should contain data for a certain table and have the name <table_name>.yml.
 
+`todos.yml`
 ```yml
-# todos.yml
 - id: 1
   description: buy a new camera
   done: 0
