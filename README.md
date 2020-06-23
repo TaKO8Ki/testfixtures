@@ -6,8 +6,6 @@
 [license]: https://img.shields.io/github/license/TaKO8Ki/testfixtures
 [docs]: https://img.shields.io/badge/docs.rs-testfixtures-8da0cb?labelColor=555555&logo=rust
 
-## Dependencies
-
 ## Install
 
 This crate is compatible with the async-std and tokio runtimes.
@@ -32,7 +30,7 @@ chrono = "0.4.11"
 
 ## Usage
 
-Create fixture files. Each file should contain data for a certain table and have the name <table_name>.yml.
+Create fixture files like the following.
 
 `todos.yml`
 ```yml
@@ -85,6 +83,9 @@ mod tests {
 }
 
 ```
+
+PgLoader and SqliteLoader are under development.
+
 ## Options
 
 ### database(required)
@@ -156,20 +157,6 @@ let loader = MySqlLoader::new(|cfg| {
 .await?;
 ```
 
-## Contribute
-
-```sh
-# setup test db
-$ make db
-
-# load environment variables
-$ make env
-$ direnv allow # https://github.com/direnv/direnv
-
-# run all tests
-$ make test
-```
-
 ## Implemation status
 ### Database
 - [x] MySQL and MariaDB
@@ -185,6 +172,19 @@ $ make test
 - [x] paths
 - [ ] template
 
+## Contribution
+
+```sh
+# setup test db
+$ make db
+
+# load environment variables
+$ make env
+$ direnv allow # https://github.com/direnv/direnv
+
+# run all tests
+$ make test
+```
 
 ## Reference
 https://github.com/go-testfixtures/testfixtures
