@@ -84,7 +84,7 @@ mod tests {
 
 ```
 
-PgLoader and SqliteLoader are under development.
+**PgLoader** and **SqliteLoader** are under development.
 
 ## Options
 
