@@ -112,7 +112,7 @@ where
         self.fixture_files.append(&mut fixtures)
     }
 
-    /// This option is a combination of files option and directory option.
+    /// Try change str to datetime.
     fn try_str_to_date(&self, s: String) -> Result<DateTime<Tz>, ParseError> {
         self.location
             .as_ref()
@@ -234,6 +234,7 @@ where
         (sql_str, values)
     }
 
+    // Check if database name ends with test.
     async fn ensure_test_database(&self) -> anyhow::Result<()> {
         let db_name = self
             .helper
