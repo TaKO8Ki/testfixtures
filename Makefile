@@ -5,3 +5,5 @@ db:
 env:
 	cp .env.example .env
 	cp .envrc.example .envrc
+doc:
+	cargo doc --no-deps --open

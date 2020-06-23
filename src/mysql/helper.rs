@@ -8,6 +8,7 @@ use sqlx::{
     Query,
 };
 
+/// **MySQL** helper.
 pub struct MySql {
     pub tables: Vec<String>,
 }
@@ -24,10 +25,12 @@ where
     O: Offset + Sync + Send + 'static,
     Tz: TimeZone<Offset = O> + Send + Sync + 'static,
 {
+    /// Initialize MySQL struct.
     async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
         Ok(())
     }
 
+    /// Get database name.
     async fn database_name(&self, pool: &MySqlPool) -> anyhow::Result<String> {
         let rec: (String,) = sqlx::query_as("SELECT DATABASE()").fetch_one(pool).await?;
         Ok(rec.0)
@@ -53,6 +56,7 @@ where
     //     Ok(names)
     // }
 
+    /// Execute SQL queries in a transaction for MySQL.
     async fn with_transaction(
         &self,
         pool: &MySqlPool,

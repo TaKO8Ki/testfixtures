@@ -1,4 +1,4 @@
-use crate::fixture_file::{FixtureFile, InsertSQL, SqlParam};
+use crate::fixture_file::{FixtureFile, InsertSql, SqlParam};
 use crate::helper::Database as DB;
 use chrono::{DateTime, Offset, ParseError, TimeZone};
 use regex::Regex;
@@ -11,6 +11,7 @@ use std::path::Path;
 use std::str::FromStr;
 use yaml_rust::{Yaml, YamlLoader};
 
+/// This type accepts and set some options.
 pub struct Loader<D, C, O, Tz>
 where
     D: Database + Sync + Send,
@@ -62,6 +63,7 @@ where
     O: Offset + Display + Send + Sync,
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
+    /// Execute SQL queries builded from yaml files.
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             if let Err(err) = self.ensure_test_database().await {
@@ -77,33 +79,40 @@ where
         Ok(())
     }
 
+    /// Set database pool.
     pub fn database(&mut self, pool: Pool<C>) {
         self.pool = Some(pool)
     }
 
+    /// Turn test database check off.
     pub fn skip_test_database_check(&mut self) {
         self.skip_test_database_check = true
     }
 
+    /// Set timezone.
     pub fn location(&mut self, location: Tz) {
         self.location = Some(location)
     }
 
+    /// Set fixture files directly.
     pub fn files(&mut self, files: Vec<&str>) {
         let mut fixtures = Self::fixtures_from_files(files);
         self.fixture_files.append(&mut fixtures)
     }
 
+    /// Set fixture files from a directory.
     pub fn directory(&mut self, directory: &str) {
         let mut fixtures = Self::fixtures_from_directory(directory);
         self.fixture_files.append(&mut fixtures)
     }
 
+    /// This option is a combination of files option and directory option.
     pub fn paths(&mut self, paths: Vec<&str>) {
         let mut fixtures = Self::fixtures_from_paths(paths);
         self.fixture_files.append(&mut fixtures)
     }
 
+    /// Try change str to datetime.
     fn try_str_to_date(&self, s: String) -> Result<DateTime<Tz>, ParseError> {
         self.location
             .as_ref()
@@ -111,6 +120,7 @@ where
             .datetime_from_str(s.as_str(), "%Y/%m/%d %H:%M:%S")
     }
 
+    /// Set fixture file content to FixtureFile struct.
     fn fixtures_from_files(files: Vec<&str>) -> Vec<FixtureFile<Tz>> {
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in files {
@@ -130,6 +140,7 @@ where
         fixture_files
     }
 
+    /// Set fixture file content from a directory to [FixtureFile](crate::fixture_file::FixtureFile) struct.
     fn fixtures_from_directory(directory: &str) -> Vec<FixtureFile<Tz>> {
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in fs::read_dir(directory).unwrap() {
@@ -145,6 +156,7 @@ where
         fixture_files
     }
 
+    /// Set fixture file content from a directory to [FixtureFile](crate::fixture_file::FixtureFile) struct.
     fn fixtures_from_paths(paths: Vec<&str>) -> Vec<FixtureFile<Tz>> {
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for path in paths {
@@ -157,6 +169,7 @@ where
         fixture_files
     }
 
+    /// Build SQL queries from fixture files.
     pub(crate) fn build_insert_sqls(&mut self) {
         for index in 0..self.fixture_files.len() {
             let file = &self.fixture_files[index].content;
@@ -168,7 +181,7 @@ where
             if let Yaml::Array(records) = &records[0] {
                 for record in records {
                     let (sql, values) = self.build_insert_sql(&self.fixture_files[index], record);
-                    self.fixture_files[index].insert_sqls.push(InsertSQL {
+                    self.fixture_files[index].insert_sqls.push(InsertSql {
                         sql,
                         params: values,
                     });
@@ -221,6 +234,7 @@ where
         (sql_str, values)
     }
 
+    // Check if database name ends with test.
     async fn ensure_test_database(&self) -> anyhow::Result<()> {
         let db_name = self
             .helper

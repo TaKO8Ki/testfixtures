@@ -13,7 +13,7 @@ keywords = ["test", "testdata", "db", "sqlx"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sqlx = { version = "0.3", features = [ "mysql", "postgres", "chrono" ] }
+sqlx = { version = "0.3", default-features = false, features = [ "mysql", "postgres", "chrono", "macros" ] }
 yaml-rust = "0.4"
 anyhow = "1.0"
 async-std = { version = "1.5.0", features = [ "attributes" ] }
@@ -22,3 +22,8 @@ async-trait = "0.1.31"
 regex = "1"
 chrono = "0.4.11"
 tempfile = "3"
+
+[features]
+default = [ "sqlx/runtime-async-std" ]
+runtime-tokio = [ "sqlx/runtime-tokio" ]
+runtime-async-std = [ "sqlx/runtime-async-std" ]
