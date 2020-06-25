@@ -266,7 +266,8 @@ mod tests {
     use tempfile::{tempdir, NamedTempFile};
     use yaml_rust::{Yaml, YamlLoader};
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn it_returns_ok() -> anyhow::Result<()> {
         pub struct TestLoadNormal {}
         impl Default for TestLoadNormal {
@@ -305,7 +306,8 @@ mod tests {
         Ok(())
     }
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn it_returns_transaction_error() -> anyhow::Result<()> {
         pub struct TestLoadTransactionError {}
         impl Default for TestLoadTransactionError {
@@ -347,7 +349,8 @@ mod tests {
         Ok(())
     }
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn it_returns_dabatase_check_error() -> anyhow::Result<()> {
         pub struct TestLoadDatabaseCheckError {}
         impl Default for TestLoadDatabaseCheckError {
@@ -399,7 +402,8 @@ mod tests {
         assert_eq!(loader.location.unwrap(), Utc);
     }
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_database() -> anyhow::Result<()> {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         let database = MySqlPool::new("fizz").await?;
@@ -556,7 +560,8 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_ensure_test_database() -> anyhow::Result<()> {
         pub struct TestEnsureTestDatabaseNormal {}
         impl Default for TestEnsureTestDatabaseNormal {

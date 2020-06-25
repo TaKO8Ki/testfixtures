@@ -128,7 +128,8 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_with_transaction() -> anyhow::Result<()> {
         let pool = MySqlPool::new(&env::var("TEST_DB_URL")?).await?;
         let dir = tempdir()?;

@@ -55,7 +55,8 @@ mod tests {
     use std::io::Write;
     use tempfile::NamedTempFile;
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_new() -> anyhow::Result<()> {
         let mut tempfile = NamedTempFile::new().unwrap();
         writeln!(

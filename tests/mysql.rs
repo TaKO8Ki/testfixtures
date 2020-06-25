@@ -7,7 +7,8 @@ use std::panic;
 use tempfile::tempdir;
 use testfixtures::MySqlLoader;
 
-#[async_std::test]
+#[cfg_attr(feature = "runtime-async-std", async_std::test)]
+#[cfg_attr(feature = "runtime-tokio", tokio::test)]
 async fn it_returns_ok() -> anyhow::Result<()> {
     let dir = tempdir()?;
     let file_path = dir.path().join("todos.yml");
@@ -70,7 +71,8 @@ async fn it_returns_ok() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[async_std::test]
+#[cfg_attr(feature = "runtime-async-std", async_std::test)]
+#[cfg_attr(feature = "runtime-tokio", tokio::test)]
 async fn it_returns_database_check_error() -> anyhow::Result<()> {
     let dir = tempdir()?;
     let file_path = dir.path().join("todos.yml");
@@ -104,7 +106,8 @@ async fn it_returns_database_check_error() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[async_std::test]
+#[cfg_attr(feature = "runtime-async-std", async_std::test)]
+#[cfg_attr(feature = "runtime-tokio", tokio::test)]
 async fn it_returns_transaction_error() -> anyhow::Result<()> {
     let dir = tempdir()?;
     let file_path = dir.path().join("todos.yml");
