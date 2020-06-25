@@ -31,5 +31,5 @@ mysql = []
 
 [[test]]
 name = "mysql"
-path = "tests/mysql/test.rs"
+path = "tests/mysql.rs"
 required-features = [ "mysql" ]
