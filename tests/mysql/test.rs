@@ -2,9 +2,9 @@ use chrono::{prelude::*, NaiveDate, Utc};
 use sqlx::{cursor::Cursor, mysql::MySqlQueryAs, MySqlPool, Row};
 use std::env;
 use std::fs::File;
-use std::io::{prelude::*, BufReader, Write};
+use std::io::Write;
 use std::panic;
-use tempfile::{tempdir, NamedTempFile};
+use tempfile::tempdir;
 use testfixtures::MySqlLoader;
 
 #[async_std::test]
@@ -70,7 +70,6 @@ async fn it_returns_database_check_error() -> anyhow::Result<()> {
     .unwrap();
 
     let pool = MySqlPool::new(&env::var("TEST_DB_URL_FOR_DB_CHECK")?).await?;
-    let pool_for_query = pool.clone();
     let loader = MySqlLoader::new(|cfg| {
         cfg.location(Utc);
         cfg.database(pool);
