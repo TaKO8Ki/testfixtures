@@ -112,6 +112,7 @@ jobs:
         uses: actions-rs/cargo@v1
         env: 
           TEST_DB_URL: mysql://root@127.0.0.1:3314/test
+          TEST_DB_URL_FOR_DB_CHECK: mysql://root@127.0.0.1:3314/fizz
         with:
           command: test
           args: --features mysql --no-fail-fast --color always
