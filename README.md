@@ -74,7 +74,9 @@ mod tests {
         .await?;
 
         // load your fixtures
-        loader.load().await?;
+        if let Err(err) = loader.load().await {
+           panic!("{}", err)
+        }
 
         // run your tests
 
