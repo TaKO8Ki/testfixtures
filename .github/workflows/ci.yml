@@ -4,9 +4,36 @@ on:
   push:
 
 jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  check:
+    name: Check
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        runtime: [async-std, tokio]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: |
+            --no-default-features
+            --features runtime-${{ matrix.runtime }}
+
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
@@ -34,12 +61,55 @@ jobs:
         with:
           command: clippy
 
-  build_and_test:
-    name: Build and Test
-    runs-on: ubuntu-latest
+  test:
+    name: Unit Test
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        runtime: [async-std, tokio]
+    needs: check
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: |
+            --no-default-features
+            --features runtime-${{ matrix.runtime }}
+            --no-fail-fast
+            --color always
+
+  mysql:
+    name: MySQL
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        mysql: [8, 5.7, 5.6]
+        runtime: [async-std, tokio]
+    needs: check
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:${{ matrix.mysql }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
           MYSQL_DATABASE: "test"
@@ -67,16 +137,23 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
+          args: |
+            --features mysql
       - name: Initialize DB
         run: sh scripts/initialize.sh
         env:
-          INIT_TEST_DB_PATH: ${{ github.workspace }}/initdb.d/create_test_table.sql
+          INIT_TEST_DB_PATH: ${{ github.workspace }}/initdb.d/initialize.sql
           TEST_DB_HOST: 127.0.0.1
           TEST_DB_PORT: 3314
       - name: Test
         uses: actions-rs/cargo@v1
         env: 
           TEST_DB_URL: mysql://root@127.0.0.1:3314/test
+          TEST_DB_URL_FOR_DB_CHECK: mysql://root@127.0.0.1:3314/fizz
         with:
           command: test
-          args: --no-fail-fast --color always
+          args: |
+            --no-default-features
+            --features mysql,runtime-${{ matrix.runtime }}
+            --no-fail-fast
+            --color always

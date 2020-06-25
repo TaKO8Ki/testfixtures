@@ -108,7 +108,7 @@ where
             Ok(_) => tx.commit().await?,
             Err(err) => {
                 tx.rollback().await?;
-                panic!("testfixtures error: {}", err);
+                return Err(anyhow::anyhow!("testfixtures error: {}", err));
             }
         };
         Ok(())
@@ -116,6 +116,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "mysql")]
 mod tests {
     use crate::fixture_file::FixtureFile;
     use crate::mysql::helper::MySql;
@@ -127,12 +128,13 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_with_transaction() -> anyhow::Result<()> {
         let pool = MySqlPool::new(&env::var("TEST_DB_URL")?).await?;
         let dir = tempdir()?;
-        let fixture_file_path = dir.path().join("todos.yml");
         let file_path = dir.path().join("todos.yml");
+        let fixture_file_path = file_path.clone();
         let mut file = File::create(file_path)?;
         writeln!(
             file,

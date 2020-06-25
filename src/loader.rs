@@ -67,7 +67,7 @@ where
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             if let Err(err) = self.ensure_test_database().await {
-                panic!("testfixtures error: {}", err);
+                return Err(anyhow::anyhow!("testfixtures error: {}", err));
             }
         }
 
@@ -266,8 +266,9 @@ mod tests {
     use tempfile::{tempdir, NamedTempFile};
     use yaml_rust::{Yaml, YamlLoader};
 
-    #[async_std::test]
-    async fn test_load() -> anyhow::Result<()> {
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
+    async fn it_returns_ok() -> anyhow::Result<()> {
         pub struct TestLoadNormal {}
         impl Default for TestLoadNormal {
             fn default() -> Self {
@@ -302,15 +303,20 @@ mod tests {
         loader.helper = Some(Box::new(TestLoadNormal {}));
         let result = loader.load().await;
         assert!(result.is_ok());
+        Ok(())
+    }
 
-        pub struct TestLoadError {}
-        impl Default for TestLoadError {
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
+    async fn it_returns_transaction_error() -> anyhow::Result<()> {
+        pub struct TestLoadTransactionError {}
+        impl Default for TestLoadTransactionError {
             fn default() -> Self {
-                TestLoadError {}
+                TestLoadTransactionError {}
             }
         }
         #[async_trait]
-        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadError
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadTransactionError
         where
             O: Offset + Sync + Send + 'static,
             Tz: TimeZone<Offset = O> + Send + Sync + 'static,
@@ -334,9 +340,58 @@ mod tests {
 
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.pool = Some(MySqlPool::new("fizz").await?);
-        loader.helper = Some(Box::new(TestLoadError {}));
+        loader.helper = Some(Box::new(TestLoadTransactionError {}));
         let result = loader.load().await;
         assert!(result.is_err());
+        if let Err(err) = result {
+            assert_eq!(err.to_string(), "error");
+        }
+        Ok(())
+    }
+
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
+    async fn it_returns_dabatase_check_error() -> anyhow::Result<()> {
+        pub struct TestLoadDatabaseCheckError {}
+        impl Default for TestLoadDatabaseCheckError {
+            fn default() -> Self {
+                TestLoadDatabaseCheckError {}
+            }
+        }
+        #[async_trait]
+        impl<O, Tz> DB<M, MySqlConnection, O, Tz> for TestLoadDatabaseCheckError
+        where
+            O: Offset + Sync + Send + 'static,
+            Tz: TimeZone<Offset = O> + Send + Sync + 'static,
+        {
+            async fn init(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+                Ok("fizz".to_string())
+            }
+
+            async fn with_transaction(
+                &self,
+                _pool: &MySqlPool,
+                _fixture_files: &[FixtureFile<Tz>],
+            ) -> anyhow::Result<()> {
+                Ok(())
+            }
+        }
+
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.pool = Some(MySqlPool::new("fizz").await?);
+        loader.helper = Some(Box::new(TestLoadDatabaseCheckError {}));
+        let result = loader.load().await;
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert_eq!(
+                err.to_string(),
+                r#"testfixtures error: 'fizz' does not appear to be a test database"#
+            );
+        }
         Ok(())
     }
 
@@ -347,7 +402,8 @@ mod tests {
         assert_eq!(loader.location.unwrap(), Utc);
     }
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_database() -> anyhow::Result<()> {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         let database = MySqlPool::new("fizz").await?;
@@ -504,7 +560,8 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[cfg_attr(feature = "runtime-async-std", async_std::test)]
+    #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_ensure_test_database() -> anyhow::Result<()> {
         pub struct TestEnsureTestDatabaseNormal {}
         impl Default for TestEnsureTestDatabaseNormal {

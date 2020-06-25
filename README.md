@@ -74,7 +74,9 @@ mod tests {
         .await?;
 
         // load your fixtures
-        loader.load().await?;
+        if let Err(err) = loader.load().await {
+           panic!("{}", err)
+        }
 
         // run your tests
 
@@ -182,7 +184,7 @@ $ make db
 $ make env
 $ direnv allow # https://github.com/direnv/direnv
 
-# run all tests
+# run unit tests
 $ make test
 ```
 
