@@ -5,3 +5,5 @@ create table todos (
     progress float,
     created_at datetime
 );
+
+create database if not exists fizz;
