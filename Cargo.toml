@@ -27,3 +27,11 @@ tempfile = "3"
 default = [ "sqlx/runtime-async-std" ]
 runtime-tokio = [ "sqlx/runtime-tokio" ]
 runtime-async-std = [ "sqlx/runtime-async-std" ]
+mysql = []
+
+[[test]]
+name = "mysql"
+path = "tests/mysql/test.rs"
+required-features = [ "mysql" ]
+doctest = false
+test = false
