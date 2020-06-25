@@ -182,7 +182,7 @@ $ make db
 $ make env
 $ direnv allow # https://github.com/direnv/direnv
 
-# run all tests
+# run unit tests
 $ make test
 ```
 
