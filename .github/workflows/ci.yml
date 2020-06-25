@@ -76,7 +76,11 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features runtime-${{ matrix.runtime }} --no-fail-fast --color always
+          args: |
+            --no-default-features
+            --features runtime-${{ matrix.runtime }}
+            --no-fail-fast
+            --color always
 
   mysql:
     name: MySQL
@@ -130,4 +134,8 @@ jobs:
           TEST_DB_URL_FOR_DB_CHECK: mysql://root@127.0.0.1:3314/fizz
         with:
           command: test
-          args: --features mysql,runtime-${{ matrix.runtime }} --no-fail-fast --color always
+          args: |
+            --no-default-features
+            --features mysql,runtime-${{ matrix.runtime }}
+            --no-fail-fast
+            --color always
