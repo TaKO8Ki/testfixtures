@@ -33,5 +33,3 @@ mysql = []
 name = "mysql"
 path = "tests/mysql/test.rs"
 required-features = [ "mysql" ]
-doctest = false
-test = false
