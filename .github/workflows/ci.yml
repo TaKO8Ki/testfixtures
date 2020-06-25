@@ -48,6 +48,9 @@ jobs:
   test:
     name: Unit Test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [async-std, tokio]
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
@@ -73,7 +76,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --color always
+          args: --features runtime-${{ matrix.runtime }} --no-fail-fast --color always
 
   mysql:
     name: MySQL
@@ -81,6 +84,7 @@ jobs:
     strategy:
       matrix:
         mysql: [8, 5.7, 5.6]
+        runtime: [async-std, tokio]
     services:
       mysql:
         image: mysql:${{ matrix.mysql }}
@@ -126,4 +130,4 @@ jobs:
           TEST_DB_URL_FOR_DB_CHECK: mysql://root@127.0.0.1:3314/fizz
         with:
           command: test
-          args: --features mysql --no-fail-fast --color always
+          args: --features mysql,runtime-${{ matrix.runtime }} --no-fail-fast --color always
