@@ -121,9 +121,7 @@ where
             "%Y%m%d %H:%M:%S",
             "%d%m%Y %H:%M",
             "%d%m%Y %H:%M:%S",
-            "%Y-%m-%dT%H%:z",
-            "%Y-%m-%dT%H:%M:%S%:z",
-            "%Y-%m-%dT%H:%M:%S %Z",
+            "%Y/%m/%d %H:%M",
             "%Y/%m/%d %H:%M:%S",
         ];
         for f in formats {
@@ -524,7 +522,7 @@ mod tests {
             argument: String,
             want_err: bool,
         };
-        let tests: [Test; 8] = [
+        let tests: [Test; 9] = [
             Test {
                 argument: "2020-01-01 01:01:01".to_string(),
                 want_err: false,
@@ -535,6 +533,10 @@ mod tests {
             },
             Test {
                 argument: "2020/01/01 01:01:01".to_string(),
+                want_err: false,
+            },
+            Test {
+                argument: "2020/01/01 01:01".to_string(),
                 want_err: false,
             },
             Test {
