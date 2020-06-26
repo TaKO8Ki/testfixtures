@@ -79,6 +79,7 @@ where
                         SqlParam::Integer(param) => args.add(param),
                         SqlParam::Datetime(param) => args.add(param.naive_local()),
                         SqlParam::Float(param) => args.add(param),
+                        SqlParam::Boolean(param) => args.add(param),
                     }
                 }
                 queries.push(sqlx::query(sql.sql.as_str()).bind_all(args))
@@ -105,7 +106,9 @@ where
         .await;
 
         match result {
-            Ok(_) => tx.commit().await?,
+            Ok(_) => {
+                tx.commit().await?;
+            }
             Err(err) => {
                 tx.rollback().await?;
                 return Err(anyhow::anyhow!("testfixtures error: {}", err));
@@ -141,7 +144,7 @@ mod tests {
             r#"
         - id: 1
           description: fizz
-          done: 1
+          done: false
           progress: 10.5
           created_at: 2020/01/01 01:01:01"#
         )
@@ -164,24 +167,28 @@ mod tests {
         };
         loader.fixture_files = vec![fixture_file];
         loader.build_insert_sqls();
-        loader
+        let result = loader
             .helper
             .unwrap()
             .with_transaction(&pool, &loader.fixture_files)
-            .await?;
+            .await;
+
+        if let Err(err) = result {
+            panic!("test error: {}", err)
+        };
 
         let mut cursor =
             sqlx::query("SELECT id, description, done, progress, created_at FROM todos")
                 .fetch(&pool);
         let row = cursor.next().await?.unwrap();
-        let id: i16 = row.get("id");
+        let id: u16 = row.get("id");
         let description: String = row.get("description");
-        let done: i16 = row.get("done");
+        let done: bool = row.get("done");
         let progress: f32 = row.get("progress");
         let created_at: NaiveDateTime = row.get("created_at");
         assert_eq!(id, 1);
         assert_eq!(description, "fizz");
-        assert_eq!(done, 1);
+        assert_eq!(done, false);
         assert_eq!(progress, 10.5);
         assert_eq!(created_at, NaiveDate::from_ymd(2020, 1, 1).and_hms(1, 1, 1));
         Ok(())

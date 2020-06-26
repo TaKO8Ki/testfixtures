@@ -1,3 +1,9 @@
+[workspace]
+members = [
+    ".",
+    "examples/mysql/",
+]
+
 [package]
 name = "testfixtures"
 version = "0.1.0"
