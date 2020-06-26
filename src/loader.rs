@@ -1,6 +1,6 @@
 use crate::fixture_file::{FixtureFile, InsertSql, SqlParam};
 use crate::helper::Database as DB;
-use chrono::{DateTime, Offset, ParseError, TimeZone};
+use chrono::{DateTime, Offset, TimeZone};
 use regex::Regex;
 use sqlx::{Connect, Connection, Database, Pool};
 use std::fmt::Display;
@@ -113,11 +113,32 @@ where
     }
 
     /// Try change str to datetime.
-    fn try_str_to_date(&self, s: String) -> Result<DateTime<Tz>, ParseError> {
-        self.location
-            .as_ref()
-            .unwrap()
-            .datetime_from_str(s.as_str(), "%Y/%m/%d %H:%M:%S")
+    fn try_str_to_date(&self, s: String) -> anyhow::Result<DateTime<Tz>> {
+        let formats = vec![
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y%m%d %H:%M",
+            "%Y%m%d %H:%M:%S",
+            "%d%m%Y %H:%M",
+            "%d%m%Y %H:%M:%S",
+            "%Y-%m-%dT%H%:z",
+            "%Y-%m-%dT%H:%M:%S%:z",
+            "%Y-%m-%dT%H:%M:%S %Z",
+            "%Y/%m/%d %H:%M:%S",
+        ];
+        for f in formats {
+            let result = self
+                .location
+                .as_ref()
+                .unwrap()
+                .datetime_from_str(s.as_str(), f);
+            if let Ok(datetime) = result {
+                return Ok(datetime);
+            }
+        }
+        Err(anyhow::anyhow!(
+            "testfixtures error: datetime format is invalid"
+        ))
     }
 
     /// Set fixture file content to FixtureFile struct.
@@ -417,6 +438,135 @@ mod tests {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.skip_test_database_check();
         assert!(loader.skip_test_database_check);
+    }
+
+    #[test]
+    fn test_files() {
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.files(vec![tempfile.path().to_str().unwrap()]);
+        assert_eq!(
+            loader.fixture_files[0].file_name,
+            tempfile
+                .path()
+                .clone()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_directory() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.yml");
+        let mut file = File::create(file_path)?;
+        writeln!(
+            file,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.directory(dir.path().to_str().unwrap());
+        assert_eq!(loader.fixture_files[0].file_name, "test.yml");
+        Ok(())
+    }
+
+    #[test]
+    fn test_paths() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.yml");
+        let mut file = File::create(file_path)?;
+        let mut tempfile = NamedTempFile::new().unwrap();
+        writeln!(
+            file,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        writeln!(
+            tempfile,
+            r#"
+        - id: 1
+          description: fizz
+          created_at: 2020/01/01 01:01:01
+          updated_at: RAW=NOW()"#
+        )
+        .unwrap();
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.paths(vec![
+            dir.path().to_str().unwrap(),
+            tempfile.path().to_str().unwrap(),
+        ]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_try_str_to_date() {
+        struct Test {
+            argument: String,
+            want_err: bool,
+        };
+        let tests: [Test; 8] = [
+            Test {
+                argument: "2020-01-01 01:01:01".to_string(),
+                want_err: false,
+            },
+            Test {
+                argument: "2020-01-01 01:01".to_string(),
+                want_err: false,
+            },
+            Test {
+                argument: "2020/01/01 01:01:01".to_string(),
+                want_err: false,
+            },
+            Test {
+                argument: "01012020 01:01:01".to_string(),
+                want_err: false,
+            },
+            Test {
+                argument: "01012020 01:01".to_string(),
+                want_err: false,
+            },
+            Test {
+                argument: "2020-01-01".to_string(),
+                want_err: true,
+            },
+            Test {
+                argument: "2020/01/01".to_string(),
+                want_err: true,
+            },
+            Test {
+                argument: "01012020".to_string(),
+                want_err: true,
+            },
+        ];
+        let mut loader = MySqlLoader::<Utc, Utc>::default();
+        loader.location(Utc);
+        for t in &tests {
+            if t.want_err {
+                assert!(loader.try_str_to_date(t.argument.to_string()).is_err());
+            } else {
+                assert!(loader.try_str_to_date(t.argument.to_string()).is_ok());
+            }
+        }
     }
 
     #[test]
