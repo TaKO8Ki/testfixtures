@@ -523,7 +523,7 @@ mod tests {
             argument: String,
             want_err: bool,
         };
-        let tests: [Test; 9] = [
+        let tests: [Test; 10] = [
             Test {
                 argument: "2020-01-01 01:01:01".to_string(),
                 want_err: false,
@@ -558,6 +558,10 @@ mod tests {
             },
             Test {
                 argument: "01012020".to_string(),
+                want_err: true,
+            },
+            Test {
+                argument: "fizzbuzz".to_string(),
                 want_err: true,
             },
         ];
