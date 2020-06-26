@@ -140,7 +140,7 @@ jobs:
           args: |
             --features mysql
       - name: Initialize DB
-        run: sh scripts/initialize.sh
+        run: mysql --host $TEST_DB_HOST --port $TEST_DB_PORT -uroot test < $INIT_TEST_DB_PATH
         env:
           INIT_TEST_DB_PATH: ${{ github.workspace }}/initdb.d/initialize.sql
           TEST_DB_HOST: 127.0.0.1
