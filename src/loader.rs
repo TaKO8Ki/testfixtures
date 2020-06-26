@@ -219,6 +219,7 @@ where
                     }
                     Yaml::Integer(v) => values.push(SqlParam::Integer(*v as u32)),
                     Yaml::Real(v) => values.push(SqlParam::Float(f32::from_str(v).unwrap())),
+                    Yaml::Boolean(v) => values.push(SqlParam::Boolean(*v)),
                     _ => (),
                 };
                 sql_values.push("?".to_string());

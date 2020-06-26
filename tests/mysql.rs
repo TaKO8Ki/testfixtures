@@ -19,12 +19,12 @@ async fn it_returns_ok() -> anyhow::Result<()> {
         r#"
         - id: 1
           description: fizz
-          done: 1
+          done: true
           progress: 10.5
           created_at: 2020/01/01 01:01:01
         - id: 2
           description: buzz
-          done: 0
+          done: false
           progress: 30.0
           created_at: 2020/01/01 02:02:02"#
     )
@@ -46,26 +46,26 @@ async fn it_returns_ok() -> anyhow::Result<()> {
     let mut cursor = sqlx::query("SELECT id, description, done, progress, created_at FROM todos")
         .fetch(&pool_for_query);
     let row = cursor.next().await?.unwrap();
-    let id: i16 = row.get("id");
+    let id: u16 = row.get("id");
     let description: String = row.get("description");
-    let done: i16 = row.get("done");
+    let done: bool = row.get("done");
     let progress: f32 = row.get("progress");
     let created_at: NaiveDateTime = row.get("created_at");
     assert_eq!(id, 1);
     assert_eq!(description, "fizz");
-    assert_eq!(done, 1);
+    assert_eq!(done, true);
     assert_eq!(progress, 10.5);
     assert_eq!(created_at, NaiveDate::from_ymd(2020, 1, 1).and_hms(1, 1, 1));
 
     let row = cursor.next().await?.unwrap();
-    let id: i16 = row.get("id");
+    let id: u16 = row.get("id");
     let description: String = row.get("description");
-    let done: i16 = row.get("done");
+    let done: bool = row.get("done");
     let progress: f32 = row.get("progress");
     let created_at: NaiveDateTime = row.get("created_at");
     assert_eq!(id, 2);
     assert_eq!(description, "buzz");
-    assert_eq!(done, 0);
+    assert_eq!(done, false);
     assert_eq!(progress, 30.0);
     assert_eq!(created_at, NaiveDate::from_ymd(2020, 1, 1).and_hms(2, 2, 2));
     Ok(())

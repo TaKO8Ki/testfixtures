@@ -25,6 +25,7 @@ where
     Datetime(DateTime<Tz>),
     Integer(u32),
     Float(f32),
+    Boolean(bool),
 }
 
 impl<Tz> FixtureFile<Tz>
