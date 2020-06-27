@@ -129,6 +129,7 @@ use chrono::Utc;
 
 let loader = MySqlLoader::new(|cfg| {
     cfg.location(Utc);
+    // or cfg.location(Local);
     // ...
 })
 .await?;
