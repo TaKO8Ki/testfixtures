@@ -122,7 +122,7 @@ where
                 return Ok(datetime);
             }
         }
-        Err(anyhow::anyhow!("testfixtures: {} is invalid format", s))
+        Err(anyhow::anyhow!("testfixtures: '{}' is invalid format", s))
     }
 
     /// Set fixture file content to FixtureFile struct.
@@ -573,7 +573,7 @@ mod tests {
                 if let Err(err) = loader.try_str_to_date(t.argument.to_string()) {
                     assert_eq!(
                         err.to_string(),
-                        format!("testfixtures: {} is invalid format", t.argument)
+                        format!("testfixtures: '{}' is invalid format", t.argument)
                     )
                 }
             } else {
