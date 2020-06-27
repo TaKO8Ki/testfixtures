@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - 'release-*'
+      - 'v*'
 jobs:
   release:
     name: Check version, Add tag and release
