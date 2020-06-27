@@ -24,12 +24,6 @@ where
     pub fixture_files: Vec<FixtureFile<Tz>>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
-    pub template: Option<bool>,
-    pub template_funcs: Option<String>,
-    pub template_left_delim: Option<String>,
-    pub template_right_delim: Option<String>,
-    pub template_options: Option<Vec<String>>,
-    pub template_data: Option<String>,
 }
 
 impl<D, C, O, Tz> Default for Loader<D, C, O, Tz>
@@ -46,12 +40,6 @@ where
             fixture_files: vec![],
             skip_test_database_check: false,
             location: None,
-            template: None,
-            template_funcs: None,
-            template_left_delim: None,
-            template_right_delim: None,
-            template_options: None,
-            template_data: None,
         }
     }
 }
