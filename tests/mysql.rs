@@ -79,7 +79,6 @@ async fn it_returns_ok() -> anyhow::Result<()> {
     let description: String = row.get("description");
     let done: bool = row.get("done");
     let progress: f32 = row.get("progress");
-    let created_at: NaiveDateTime = row.get("created_at");
     assert_eq!(id, 3);
     assert_eq!(description, "buzz");
     assert_eq!(done, false);
