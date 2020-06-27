@@ -289,7 +289,7 @@ mod tests {
     use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
     use std::io::{prelude::*, BufReader, Write};
-    use tempfile::{tempdir, NamedTempFile};
+    use tempfile::{tempdir, NamedTempFile, TempDir};
     use yaml_rust::{Yaml, YamlLoader};
 
     #[cfg_attr(feature = "runtime-async-std", async_std::test)]
@@ -611,8 +611,11 @@ mod tests {
     #[test]
     fn test_fixtures_from_directory() -> anyhow::Result<()> {
         let dir = tempdir()?;
+        TempDir::new_in(dir.path())?;
         let file_path = dir.path().join("test.yml");
+        let text_file_path = dir.path().join("test.txt");
         let mut file = File::create(file_path)?;
+        File::create(text_file_path)?;
         writeln!(
             file,
             r#"
@@ -624,6 +627,7 @@ mod tests {
         .unwrap();
         let fixture_files =
             MySqlLoader::<Utc, Utc>::fixtures_from_directory(dir.path().to_str().unwrap());
+        assert_eq!(fixture_files.len(), 1);
         assert_eq!(fixture_files[0].file_name, "test.yml");
         Ok(())
     }
