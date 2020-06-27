@@ -52,7 +52,6 @@ mod helper;
 mod loader;
 mod mysql;
 
-// reexport key APIs
 pub use fixture_file::{FixtureFile, InsertSql, SqlParam};
 pub use helper::Database;
 pub use loader::Loader;
