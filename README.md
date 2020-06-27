@@ -35,12 +35,12 @@ Create fixture files like the following.
 `todos.yml`
 ```yml
 - id: 1
-  description: fizz
+  description: buy a new camera
   done: true
   progress: 10.5
   created_at: 2020/01/01 01:01:01
 - id: 2
-  description: buzz
+  description: meeting
   done: false
   progress: 30.0
   created_at: 2020/01/01 02:02:02
