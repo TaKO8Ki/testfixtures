@@ -19,7 +19,7 @@ where
     {
         let mut loader = Self::default();
         options(&mut loader);
-        loader.helper = Some(Box::new(helper::PostgreSql { tables: vec![] }));
+        loader.helper = Some(Box::new(helper::PostgreSql::default()));
         loader.build_insert_sqls();
         loader
             .helper

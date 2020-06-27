@@ -9,12 +9,14 @@ use sqlx::{
 
 /// **PostgreSQL** helper.
 pub struct PostgreSql {
-    pub tables: Vec<String>,
+    pub table_names: Vec<String>,
 }
 
 impl Default for PostgreSql {
     fn default() -> Self {
-        PostgreSql { tables: vec![] }
+        PostgreSql {
+            table_names: vec![],
+        }
     }
 }
 

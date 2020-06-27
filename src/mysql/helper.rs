@@ -10,12 +10,14 @@ use sqlx::{
 
 /// **MySQL** helper.
 pub struct MySql {
-    pub tables: Vec<String>,
+    pub table_names: Vec<String>,
 }
 
 impl Default for MySql {
     fn default() -> Self {
-        MySql { tables: vec![] }
+        MySql {
+            table_names: vec![],
+        }
     }
 }
 
@@ -152,7 +154,7 @@ mod tests {
 
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.location(Utc);
-        loader.helper = Some(Box::new(MySql { tables: vec![] }));
+        loader.helper = Some(Box::new(MySql::default()));
         let fixture_file = FixtureFile::<Utc> {
             path: fixture_file_path.to_str().unwrap().to_string(),
             file_name: fixture_file_path
