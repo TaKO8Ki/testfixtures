@@ -6,7 +6,7 @@ workspace = "../../"
 
 [dependencies]
 testfixtures = { path = "../../" }
-sqlx = { version = "0.3", default-features = false, features = [ "mysql", "chrono", "macros" ] }
+sqlx = { version = "0.3", features = [ "mysql", "chrono" ] }
 async-std = { version = "1.5.0", features = [ "attributes" ] }
 paw = "1.0"
 chrono = "0.4.11"
