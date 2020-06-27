@@ -1,6 +1,6 @@
 # testfixtures
 
-[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![docs]](https://crates.io/crates/testfixtures) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE) 
+[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![docs]](https://docs.rs/testfixtures) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE)
 
 [build]: https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master?logo=github
 [license]: https://img.shields.io/github/license/TaKO8Ki/testfixtures
