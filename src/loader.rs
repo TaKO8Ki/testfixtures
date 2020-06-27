@@ -164,13 +164,19 @@ where
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in fs::read_dir(directory).unwrap() {
             let f = f.unwrap();
-            let fixture = FixtureFile {
-                path: f.path().to_str().unwrap().to_string(),
-                file_name: f.file_name().to_str().unwrap().to_string(),
-                content: File::open(f.path()).unwrap(),
-                insert_sqls: vec![],
+            let file_extension = match f.path().extension() {
+                Some(ext) => ext.to_str().unwrap().to_string(),
+                None => "".to_string(),
             };
-            fixture_files.push(fixture);
+            if !f.path().is_dir() && (file_extension == "yml" || file_extension == "yaml") {
+                let fixture = FixtureFile {
+                    path: f.path().to_str().unwrap().to_string(),
+                    file_name: f.file_name().to_str().unwrap().to_string(),
+                    content: File::open(f.path()).unwrap(),
+                    insert_sqls: vec![],
+                };
+                fixture_files.push(fixture);
+            }
         }
         fixture_files
     }
@@ -193,9 +199,9 @@ where
         for index in 0..self.fixture_files.len() {
             let file = &self.fixture_files[index].content;
             let mut buf_reader = BufReader::new(file);
-            let mut contents = String::new();
-            buf_reader.read_to_string(&mut contents).unwrap();
-            let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
+            let mut content = String::new();
+            buf_reader.read_to_string(&mut content).unwrap();
+            let records = YamlLoader::load_from_str(content.as_str()).unwrap();
 
             if let Yaml::Array(records) = &records[0] {
                 for record in records {
@@ -283,7 +289,7 @@ mod tests {
     use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
     use std::io::{prelude::*, BufReader, Write};
-    use tempfile::{tempdir, NamedTempFile};
+    use tempfile::{tempdir, NamedTempFile, TempDir};
     use yaml_rust::{Yaml, YamlLoader};
 
     #[cfg_attr(feature = "runtime-async-std", async_std::test)]
@@ -605,8 +611,11 @@ mod tests {
     #[test]
     fn test_fixtures_from_directory() -> anyhow::Result<()> {
         let dir = tempdir()?;
+        TempDir::new_in(dir.path())?;
         let file_path = dir.path().join("test.yml");
+        let text_file_path = dir.path().join("test.txt");
         let mut file = File::create(file_path)?;
+        File::create(text_file_path)?;
         writeln!(
             file,
             r#"
@@ -618,6 +627,7 @@ mod tests {
         .unwrap();
         let fixture_files =
             MySqlLoader::<Utc, Utc>::fixtures_from_directory(dir.path().to_str().unwrap());
+        assert_eq!(fixture_files.len(), 1);
         assert_eq!(fixture_files[0].file_name, "test.yml");
         Ok(())
     }

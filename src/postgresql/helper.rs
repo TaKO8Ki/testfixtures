@@ -9,23 +9,14 @@ use sqlx::{
 
 /// **PostgreSQL** helper.
 pub struct PostgreSql {
-    pub tables: Vec<String>,
-    // pub use_alter_constraint: bool,
-    // pub skip_reset_sequences: bool,
-    // pub reset_sequences_to:   u32,
-    // pub sequences:                Vec<String>,
-    // pub nonDeferrableConstraints: Vec<PgConstraint>,
-    // pub tablesChecksum:           map[string]string
+    pub table_names: Vec<String>,
 }
-
-// pub struct PgConstraint {
-//     table_name: String,
-//     constraint_name: String,
-// }
 
 impl Default for PostgreSql {
     fn default() -> Self {
-        PostgreSql { tables: vec![] }
+        PostgreSql {
+            table_names: vec![],
+        }
     }
 }
 

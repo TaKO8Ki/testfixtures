@@ -35,19 +35,38 @@ Create fixture files like the following.
 `todos.yml`
 ```yml
 - id: 1
-  description: buy a new camera
-  done: 0
+  description: fizz
+  done: true
+  progress: 10.5
+  created_at: 2020/01/01 01:01:01
 - id: 2
-  description: meeting
-  done: 0
+  description: buzz
+  done: false
+  progress: 30.0
+  created_at: 2020/01/01 02:02:02
 ```
+
+<details><summary>Click and see the datetime format example</summary><div>
+
+```rust
+2020-01-01 01:01
+2020-01-01 01:01:01
+20200101 01:01
+20200101 01:01:01
+01012020 01:01
+01012020 01:01:01
+2020/01/01 01:01
+2020/01/01 01:01:01
+```
+</div></details><br>
 
 If you need to write raw SQL, probably to call a function, prefix the value of the column with RAW=.
 
 ```yml
 - id: 1
-  description: buy a new camera
-  done: 0
+  description: fizz
+  done: true
+  progress: 10.5
   created_at: RAW=NOW()
 ```
 
@@ -110,6 +129,7 @@ use chrono::Utc;
 
 let loader = MySqlLoader::new(|cfg| {
     cfg.location(Utc);
+    // or cfg.location(Local);
     // ...
 })
 .await?;
@@ -165,7 +185,7 @@ let loader = MySqlLoader::new(|cfg| {
 - [ ] Postgres
 - [ ] SQLite
 
-### Option
+### Options
 - [x] database
 - [x] load files
 - [x] skip_test_database_check

@@ -9,14 +9,13 @@ name = "testfixtures"
 version = "0.1.0"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
-
 license = "MIT"
 description = "A library for preparing test data from yaml files in Rust"
 repository = "https://github.com/TaKO8Ki/testfixtures"
+documentation = "https://docs.rs/testfixtures"
 readme = "README.md"
-keywords = ["test", "testdata", "db", "sqlx"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["test", "testdata", "db", "sqlx", "mysql"]
+categories = [ "database" ]
 
 [dependencies]
 sqlx = { version = "0.3", default-features = false, features = [ "mysql", "postgres", "chrono", "macros" ] }
