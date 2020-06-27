@@ -8,6 +8,8 @@
 [download]: https://img.shields.io/crates/d/testfixtures
 [crates]: https://img.shields.io/crates/v/testfixtures.svg?logo=rust
 
+testfixtures is a Rust library for preparing test data from yaml files.
+
 ## Install
 
 This crate is compatible with the async-std and tokio runtimes.
