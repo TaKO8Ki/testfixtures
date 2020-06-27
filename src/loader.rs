@@ -135,7 +135,8 @@ where
             }
         }
         Err(anyhow::anyhow!(
-            "testfixtures error: datetime format is invalid"
+            "testfixtures error: {} is invalid format",
+            s
         ))
     }
 
@@ -576,6 +577,12 @@ mod tests {
         for t in &tests {
             if t.want_err {
                 assert!(loader.try_str_to_date(t.argument.to_string()).is_err());
+                if let Err(err) = loader.try_str_to_date(t.argument.to_string()) {
+                    assert_eq!(
+                        err.to_string(),
+                        format!("testfixtures error: {} is invalid format", t.argument)
+                    )
+                }
             } else {
                 assert!(loader.try_str_to_date(t.argument.to_string()).is_ok());
             }
