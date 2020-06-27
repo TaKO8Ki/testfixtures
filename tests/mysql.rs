@@ -26,7 +26,12 @@ async fn it_returns_ok() -> anyhow::Result<()> {
           description: buzz
           done: false
           progress: 30.0
-          created_at: 2020/01/01 02:02:02"#
+          created_at: 2020/01/01 02:02:02
+        - id: 3
+          description: buzz
+          done: false
+          progress: 25.0
+          created_at: RAW=NOW()"#
     )
     .unwrap();
 
@@ -68,6 +73,18 @@ async fn it_returns_ok() -> anyhow::Result<()> {
     assert_eq!(done, false);
     assert_eq!(progress, 30.0);
     assert_eq!(created_at, NaiveDate::from_ymd(2020, 1, 1).and_hms(2, 2, 2));
+
+    let row = cursor.next().await?.unwrap();
+    let id: u16 = row.get("id");
+    let description: String = row.get("description");
+    let done: bool = row.get("done");
+    let progress: f32 = row.get("progress");
+    let created_at: NaiveDateTime = row.get("created_at");
+    assert_eq!(id, 3);
+    assert_eq!(description, "buzz");
+    assert_eq!(done, false);
+    assert_eq!(progress, 25.0);
+    // TODO: check if created_at is the expected value.
     Ok(())
 }
 
