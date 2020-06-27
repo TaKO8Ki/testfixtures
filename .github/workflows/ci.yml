@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     tags-ignore:
-      - *
+      - v*
 
 jobs:
   format:
