@@ -23,6 +23,7 @@ jobs:
   release:
     name: Cargo publish
     runs-on: ubuntu-20.04
+    needs: check
     steps:
       - uses: actions/checkout@v1
       - run: cargo login ${CRATES_IO_TOKEN}
