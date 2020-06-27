@@ -52,29 +52,32 @@ mod tests {
     use crate::mysql::loader::MySqlLoader;
     use chrono::Utc;
     use sqlx::MySqlPool;
+    use std::fs::File;
     use std::io::Write;
-    use tempfile::NamedTempFile;
+    use tempfile::tempdir;
 
     #[cfg_attr(feature = "runtime-async-std", async_std::test)]
     #[cfg_attr(feature = "runtime-tokio", tokio::test)]
     async fn test_new() -> anyhow::Result<()> {
-        let mut tempfile = NamedTempFile::new().unwrap();
+        let dir = tempdir()?;
+        let file_path = dir.path().join("todos.yml");
+        let fixture_file_path = file_path.clone();
+        let mut file = File::create(file_path)?;
         writeln!(
-            tempfile,
+            file,
             r#"
         - id: 1
           description: fizz
           created_at: 2020/01/01 01:01:01
           updated_at: RAW=NOW()"#
-        )
-        .unwrap();
+        )?;
 
         let pool = MySqlPool::new("fizz").await?;
         let loader = MySqlLoader::new(|cfg| {
             cfg.location(Utc);
             cfg.database(pool);
             cfg.skip_test_database_check();
-            cfg.files(vec![tempfile.path().to_str().unwrap()]);
+            cfg.files(vec![fixture_file_path.to_str().unwrap()]);
         })
         .await?;
 
