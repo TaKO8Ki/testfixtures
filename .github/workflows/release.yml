@@ -5,7 +5,7 @@ on:
       - 'v*'
 jobs:
   release:
-    name: Check version, Add tag and release
+    name: Cargo publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1

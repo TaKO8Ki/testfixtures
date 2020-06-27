@@ -14,7 +14,7 @@ description = "A library for preparing test data from yaml files in Rust"
 repository = "https://github.com/TaKO8Ki/testfixtures"
 documentation = "https://docs.rs/testfixtures"
 readme = "README.md"
-keywords = ["test", "testdata", "db", "sqlx", "mysql"]
+keywords = [ "test", "testdata", "db", "sqlx", "mysql" ]
 categories = [ "database" ]
 
 [dependencies]

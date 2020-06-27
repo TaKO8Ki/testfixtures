@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_file_stem() -> anyhow::Result<()> {
         let dir = tempdir()?;
-        let file_path = dir.path().join("test.yml");
+        let file_path = dir.path().join("todos.yml");
         let fixture_file_path = file_path.clone();
         let mut file = File::create(file_path)?;
         writeln!(
@@ -83,14 +83,14 @@ mod tests {
             insert_sqls: vec![],
         };
 
-        assert_eq!(fixture_file.file_stem(), "test");
+        assert_eq!(fixture_file.file_stem(), "todos");
         Ok(())
     }
 
     #[test]
     fn test_delete() -> anyhow::Result<()> {
         let dir = tempdir()?;
-        let file_path = dir.path().join("test.yml");
+        let file_path = dir.path().join("todos.yml");
         let fixture_file_path = file_path.clone();
         let mut file = File::create(file_path)?;
         writeln!(
@@ -116,7 +116,7 @@ mod tests {
             insert_sqls: vec![],
         };
 
-        assert_eq!(fixture_file.delete(), "DELETE FROM test");
+        assert_eq!(fixture_file.delete(), "DELETE FROM todos");
         Ok(())
     }
 }

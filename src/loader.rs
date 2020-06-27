@@ -24,12 +24,6 @@ where
     pub fixture_files: Vec<FixtureFile<Tz>>,
     pub skip_test_database_check: bool,
     pub location: Option<Tz>,
-    pub template: Option<bool>,
-    pub template_funcs: Option<String>,
-    pub template_left_delim: Option<String>,
-    pub template_right_delim: Option<String>,
-    pub template_options: Option<Vec<String>>,
-    pub template_data: Option<String>,
 }
 
 impl<D, C, O, Tz> Default for Loader<D, C, O, Tz>
@@ -46,12 +40,6 @@ where
             fixture_files: vec![],
             skip_test_database_check: false,
             location: None,
-            template: None,
-            template_funcs: None,
-            template_left_delim: None,
-            template_right_delim: None,
-            template_options: None,
-            template_data: None,
         }
     }
 }
@@ -67,7 +55,7 @@ where
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             if let Err(err) = self.ensure_test_database().await {
-                return Err(anyhow::anyhow!("testfixtures error: {}", err));
+                return Err(anyhow::anyhow!("testfixtures: {}", err));
             }
         }
 
@@ -134,9 +122,7 @@ where
                 return Ok(datetime);
             }
         }
-        Err(anyhow::anyhow!(
-            "testfixtures error: datetime format is invalid"
-        ))
+        Err(anyhow::anyhow!("testfixtures: '{}' is invalid format", s))
     }
 
     /// Set fixture file content to FixtureFile struct.
@@ -289,7 +275,7 @@ mod tests {
     use sqlx::{MySql as M, MySqlConnection, MySqlPool};
     use std::fs::File;
     use std::io::{prelude::*, BufReader, Write};
-    use tempfile::{tempdir, NamedTempFile, TempDir};
+    use tempfile::{tempdir, TempDir};
     use yaml_rust::{Yaml, YamlLoader};
 
     #[cfg_attr(feature = "runtime-async-std", async_std::test)]
@@ -415,7 +401,7 @@ mod tests {
         if let Err(err) = result {
             assert_eq!(
                 err.to_string(),
-                r#"testfixtures error: 'fizz' does not appear to be a test database"#
+                r#"testfixtures: 'fizz' does not appear to be a test database"#
             );
         }
         Ok(())
@@ -447,9 +433,12 @@ mod tests {
 
     #[test]
     fn test_files() {
-        let mut tempfile = NamedTempFile::new().unwrap();
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("todos.yml");
+        let fixture_file_path = file_path.clone();
+        let mut file = File::create(file_path).unwrap();
         writeln!(
-            tempfile,
+            file,
             r#"
         - id: 1
           description: fizz
@@ -458,23 +447,17 @@ mod tests {
         )
         .unwrap();
         let mut loader = MySqlLoader::<Utc, Utc>::default();
-        loader.files(vec![tempfile.path().to_str().unwrap()]);
+        loader.files(vec![fixture_file_path.to_str().unwrap()]);
         assert_eq!(
             loader.fixture_files[0].file_name,
-            tempfile
-                .path()
-                .clone()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
+            fixture_file_path.file_name().unwrap().to_str().unwrap()
         );
     }
 
     #[test]
     fn test_directory() -> anyhow::Result<()> {
         let dir = tempdir()?;
-        let file_path = dir.path().join("test.yml");
+        let file_path = dir.path().join("todos.yml");
         let mut file = File::create(file_path)?;
         writeln!(
             file,
@@ -487,18 +470,19 @@ mod tests {
         .unwrap();
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.directory(dir.path().to_str().unwrap());
-        assert_eq!(loader.fixture_files[0].file_name, "test.yml");
+        assert_eq!(loader.fixture_files[0].file_name, "todos.yml");
         Ok(())
     }
 
     #[test]
     fn test_paths() -> anyhow::Result<()> {
         let dir = tempdir()?;
-        let file_path = dir.path().join("test.yml");
-        let mut file = File::create(file_path)?;
-        let mut tempfile = NamedTempFile::new().unwrap();
+        let file_1_path = dir.path().join("test_1.yml");
+        let mut file_1 = File::create(file_1_path)?;
+        let file_2_path = dir.path().join("test_2.yml");
+        let mut file_2 = File::create(file_2_path)?;
         writeln!(
-            file,
+            file_1,
             r#"
         - id: 1
           description: fizz
@@ -507,7 +491,7 @@ mod tests {
         )
         .unwrap();
         writeln!(
-            tempfile,
+            file_2,
             r#"
         - id: 1
           description: fizz
@@ -518,7 +502,17 @@ mod tests {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.paths(vec![
             dir.path().to_str().unwrap(),
-            tempfile.path().to_str().unwrap(),
+            format!(
+                "{}/{}",
+                dir.path().to_str().unwrap(),
+                dir.path()
+                    .join("test_1.yml")
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            )
+            .as_str(),
         ]);
         Ok(())
     }
@@ -576,6 +570,12 @@ mod tests {
         for t in &tests {
             if t.want_err {
                 assert!(loader.try_str_to_date(t.argument.to_string()).is_err());
+                if let Err(err) = loader.try_str_to_date(t.argument.to_string()) {
+                    assert_eq!(
+                        err.to_string(),
+                        format!("testfixtures: '{}' is invalid format", t.argument)
+                    )
+                }
             } else {
                 assert!(loader.try_str_to_date(t.argument.to_string()).is_ok());
             }
@@ -584,9 +584,12 @@ mod tests {
 
     #[test]
     fn test_fixtures_from_files() {
-        let mut tempfile = NamedTempFile::new().unwrap();
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("todos.yml");
+        let fixture_file_path = file_path.clone();
+        let mut file = File::create(file_path).unwrap();
         writeln!(
-            tempfile,
+            file,
             r#"
         - id: 1
           description: fizz
@@ -595,16 +598,10 @@ mod tests {
         )
         .unwrap();
         let fixture_files =
-            MySqlLoader::<Utc, Utc>::fixtures_from_files(vec![tempfile.path().to_str().unwrap()]);
+            MySqlLoader::<Utc, Utc>::fixtures_from_files(vec![fixture_file_path.to_str().unwrap()]);
         assert_eq!(
             fixture_files[0].file_name,
-            tempfile
-                .path()
-                .clone()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
+            fixture_file_path.file_name().unwrap().to_str().unwrap()
         );
     }
 
@@ -612,7 +609,7 @@ mod tests {
     fn test_fixtures_from_directory() -> anyhow::Result<()> {
         let dir = tempdir()?;
         TempDir::new_in(dir.path())?;
-        let file_path = dir.path().join("test.yml");
+        let file_path = dir.path().join("todos.yml");
         let text_file_path = dir.path().join("test.txt");
         let mut file = File::create(file_path)?;
         File::create(text_file_path)?;
@@ -628,18 +625,19 @@ mod tests {
         let fixture_files =
             MySqlLoader::<Utc, Utc>::fixtures_from_directory(dir.path().to_str().unwrap());
         assert_eq!(fixture_files.len(), 1);
-        assert_eq!(fixture_files[0].file_name, "test.yml");
+        assert_eq!(fixture_files[0].file_name, "todos.yml");
         Ok(())
     }
 
     #[test]
     fn test_fixtures_from_paths() -> anyhow::Result<()> {
         let dir = tempdir()?;
-        let file_path = dir.path().join("test.yml");
-        let mut file = File::create(file_path)?;
-        let mut tempfile = NamedTempFile::new().unwrap();
+        let file_1_path = dir.path().join("test_1.yml");
+        let mut file_1 = File::create(file_1_path)?;
+        let file_2_path = dir.path().join("test_2.yml");
+        let mut file_2 = File::create(file_2_path)?;
         writeln!(
-            file,
+            file_1,
             r#"
         - id: 1
           description: fizz
@@ -648,7 +646,7 @@ mod tests {
         )
         .unwrap();
         writeln!(
-            tempfile,
+            file_2,
             r#"
         - id: 1
           description: fizz
@@ -658,14 +656,13 @@ mod tests {
         .unwrap();
         let fixture_files = MySqlLoader::<Utc, Utc>::fixtures_from_paths(vec![
             dir.path().to_str().unwrap(),
-            tempfile.path().to_str().unwrap(),
+            dir.path().join("test_2.yml").to_str().unwrap(),
         ]);
-        assert_eq!(fixture_files[0].file_name, "test.yml");
+        assert_eq!(fixture_files[0].file_name, "test_2.yml");
         assert_eq!(
             fixture_files[1].file_name,
-            tempfile
-                .path()
-                .clone()
+            dir.path()
+                .join("test_1.yml")
                 .file_name()
                 .unwrap()
                 .to_str()
@@ -677,9 +674,12 @@ mod tests {
     #[test]
     fn test_build_insert_sql() {
         // different columns have different types.
-        let mut tempfile = NamedTempFile::new().unwrap();
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("todos.yml");
+        let fixture_file_path = file_path.clone();
+        let mut file = File::create(file_path).unwrap();
         writeln!(
-            tempfile,
+            file,
             r#"
         - id: 1
           description: fizz
@@ -692,16 +692,15 @@ mod tests {
         let mut loader = MySqlLoader::<Utc, Utc>::default();
         loader.location(Utc);
         let fixture_file = FixtureFile {
-            path: tempfile.path().to_str().unwrap().to_string(),
-            file_name: tempfile
-                .path()
+            path: fixture_file_path.to_str().unwrap().to_string(),
+            file_name: fixture_file_path
                 .clone()
                 .file_name()
                 .unwrap()
                 .to_str()
                 .unwrap()
                 .to_string(),
-            content: File::open(tempfile).unwrap(),
+            content: File::open(fixture_file_path).unwrap(),
             insert_sqls: vec![],
         };
         let mut buf_reader = BufReader::new(&fixture_file.content);

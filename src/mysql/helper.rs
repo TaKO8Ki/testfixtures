@@ -113,7 +113,7 @@ where
             }
             Err(err) => {
                 tx.rollback().await?;
-                return Err(anyhow::anyhow!("testfixtures error: {}", err));
+                return Err(anyhow::anyhow!("testfixtures: {}", err));
             }
         };
         Ok(())

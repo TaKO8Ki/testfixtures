@@ -116,7 +116,7 @@ async fn it_returns_database_check_error() -> anyhow::Result<()> {
     if let Err(err) = result {
         assert_eq!(
             err.to_string(),
-            r#"testfixtures error: 'fizz' does not appear to be a test database"#
+            r#"testfixtures: 'fizz' does not appear to be a test database"#
         );
     }
     Ok(())
@@ -152,7 +152,7 @@ async fn it_returns_transaction_error() -> anyhow::Result<()> {
     if let Err(err) = result {
         assert_eq!(
             err.to_string(),
-            r#"testfixtures error: Unknown column 'updated_at' in 'field list'"#
+            r#"testfixtures: Unknown column 'updated_at' in 'field list'"#
         );
     }
     Ok(())
