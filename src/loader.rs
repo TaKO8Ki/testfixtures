@@ -55,7 +55,7 @@ where
     pub async fn load(&self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             if let Err(err) = self.ensure_test_database().await {
-                return Err(anyhow::anyhow!("testfixtures error: {}", err));
+                return Err(anyhow::anyhow!("testfixtures: {}", err));
             }
         }
 
@@ -122,10 +122,7 @@ where
                 return Ok(datetime);
             }
         }
-        Err(anyhow::anyhow!(
-            "testfixtures error: {} is invalid format",
-            s
-        ))
+        Err(anyhow::anyhow!("testfixtures: {} is invalid format", s))
     }
 
     /// Set fixture file content to FixtureFile struct.
@@ -404,7 +401,7 @@ mod tests {
         if let Err(err) = result {
             assert_eq!(
                 err.to_string(),
-                r#"testfixtures error: 'fizz' does not appear to be a test database"#
+                r#"testfixtures: 'fizz' does not appear to be a test database"#
             );
         }
         Ok(())
@@ -576,7 +573,7 @@ mod tests {
                 if let Err(err) = loader.try_str_to_date(t.argument.to_string()) {
                     assert_eq!(
                         err.to_string(),
-                        format!("testfixtures error: {} is invalid format", t.argument)
+                        format!("testfixtures: {} is invalid format", t.argument)
                     )
                 }
             } else {

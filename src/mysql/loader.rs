@@ -36,10 +36,10 @@ where
         let mut loader = Self::default();
         options(&mut loader);
         if loader.location.is_none() {
-            return Err(anyhow::anyhow!("testfixtures error: you need a location"));
+            return Err(anyhow::anyhow!("testfixtures: you need a location"));
         }
         if loader.pool.is_none() {
-            return Err(anyhow::anyhow!("testfixtures error: you need a pool"));
+            return Err(anyhow::anyhow!("testfixtures: you need a pool"));
         }
         loader.helper = Some(Box::new(helper::MySql::default()));
         loader.build_insert_sqls();
