@@ -193,9 +193,9 @@ where
         for index in 0..self.fixture_files.len() {
             let file = &self.fixture_files[index].content;
             let mut buf_reader = BufReader::new(file);
-            let mut contents = String::new();
-            buf_reader.read_to_string(&mut contents).unwrap();
-            let records = YamlLoader::load_from_str(contents.as_str()).unwrap();
+            let mut content = String::new();
+            buf_reader.read_to_string(&mut content).unwrap();
+            let records = YamlLoader::load_from_str(content.as_str()).unwrap();
 
             if let Yaml::Array(records) = &records[0] {
                 for record in records {
