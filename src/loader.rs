@@ -64,7 +64,7 @@ where
     Tz: TimeZone<Offset = O> + Send + Sync,
 {
     /// Execute SQL queries builded from yaml files.
-    pub async fn load(&self) -> anyhow::Result<()> {
+    pub async fn load(&mut self) -> anyhow::Result<()> {
         if !self.skip_test_database_check {
             if let Err(err) = self.ensure_test_database().await {
                 return Err(anyhow::anyhow!("testfixtures error: {}", err));
@@ -72,9 +72,21 @@ where
         }
 
         self.helper
+            .as_mut()
+            .unwrap()
+            .init(self.pool.as_ref().unwrap())
+            .await?;
+
+        self.helper
             .as_ref()
             .unwrap()
             .with_transaction(self.pool.as_ref().unwrap(), &self.fixture_files)
+            .await?;
+
+        self.helper
+            .as_mut()
+            .unwrap()
+            .after_load(self.pool.as_ref().unwrap())
             .await?;
         Ok(())
     }
@@ -256,12 +268,7 @@ where
 
     // Check if database name ends with test.
     async fn ensure_test_database(&self) -> anyhow::Result<()> {
-        let db_name = self
-            .helper
-            .as_ref()
-            .unwrap()
-            .database_name(self.pool.as_ref().unwrap())
-            .await?;
+        let db_name = self.helper.as_ref().unwrap().database_name().await?;
         let re = Regex::new(r"^*?test$")?;
         if !re.is_match(db_name.as_str()) {
             return Err(anyhow::anyhow!(
@@ -305,7 +312,7 @@ mod tests {
                 Ok(())
             }
 
-            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+            async fn database_name(&self) -> anyhow::Result<String> {
                 Ok("test".to_string())
             }
 
@@ -314,6 +321,10 @@ mod tests {
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
             ) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn after_load(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
                 Ok(())
             }
         }
@@ -345,7 +356,7 @@ mod tests {
                 Ok(())
             }
 
-            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+            async fn database_name(&self) -> anyhow::Result<String> {
                 Ok("test".to_string())
             }
 
@@ -355,6 +366,10 @@ mod tests {
                 _fixture_files: &[FixtureFile<Tz>],
             ) -> anyhow::Result<()> {
                 Err(anyhow::anyhow!("error"))
+            }
+
+            async fn after_load(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
+                Ok(())
             }
         }
 
@@ -388,7 +403,7 @@ mod tests {
                 Ok(())
             }
 
-            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+            async fn database_name(&self) -> anyhow::Result<String> {
                 Ok("fizz".to_string())
             }
 
@@ -397,6 +412,10 @@ mod tests {
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
             ) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn after_load(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
                 Ok(())
             }
         }
@@ -736,7 +755,7 @@ mod tests {
                 Ok(())
             }
 
-            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+            async fn database_name(&self) -> anyhow::Result<String> {
                 Ok("test".to_string())
             }
 
@@ -745,6 +764,10 @@ mod tests {
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
             ) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn after_load(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
                 Ok(())
             }
         }
@@ -770,7 +793,7 @@ mod tests {
                 Ok(())
             }
 
-            async fn database_name(&self, _pool: &MySqlPool) -> anyhow::Result<String> {
+            async fn database_name(&self) -> anyhow::Result<String> {
                 Ok("fizz".to_string())
             }
 
@@ -779,6 +802,10 @@ mod tests {
                 _pool: &MySqlPool,
                 _fixture_files: &[FixtureFile<Tz>],
             ) -> anyhow::Result<()> {
+                Ok(())
+            }
+
+            async fn after_load(&mut self, _pool: &MySqlPool) -> anyhow::Result<()> {
                 Ok(())
             }
         }

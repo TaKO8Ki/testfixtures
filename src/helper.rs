@@ -16,7 +16,7 @@ where
     async fn init(&mut self, db: &Pool<C>) -> anyhow::Result<()>;
 
     /// Get database name by excuting SQL query.
-    async fn database_name(&self, db: &Pool<C>) -> anyhow::Result<String>;
+    async fn database_name(&self) -> anyhow::Result<String>;
 
     // TODO: complete this function
     // async fn table_names(&self, db: &Pool<C>) -> anyhow::Result<Vec<String>>;
@@ -27,4 +27,6 @@ where
         pool: &Pool<C>,
         fixture_files: &[FixtureFile<Tz>],
     ) -> anyhow::Result<()>;
+
+    async fn after_load(&mut self, pool: &Pool<C>) -> anyhow::Result<()>;
 }

@@ -105,4 +105,8 @@ where
         }
         Ok(())
     }
+
+    async fn after_load(&mut self, pool: &MySqlPool) -> anyhow::Result<()> {
+        Ok(())
+    }
 }

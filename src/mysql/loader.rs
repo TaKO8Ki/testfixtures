@@ -35,7 +35,7 @@ where
     {
         let mut loader = Self::default();
         options(&mut loader);
-        loader.helper = Some(Box::new(helper::MySql { tables: vec![] }));
+        loader.helper = Some(Box::new(helper::MySql::default()));
         loader.build_insert_sqls();
         loader
             .helper

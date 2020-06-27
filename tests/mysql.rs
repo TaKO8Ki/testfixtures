@@ -68,6 +68,17 @@ async fn it_returns_ok() -> anyhow::Result<()> {
     assert_eq!(done, false);
     assert_eq!(progress, 30.0);
     assert_eq!(created_at, NaiveDate::from_ymd(2020, 1, 1).and_hms(2, 2, 2));
+
+    let row = cursor.next().await?.unwrap();
+    let id: u16 = row.get("id");
+    let description: String = row.get("description");
+    let done: bool = row.get("done");
+    let progress: f32 = row.get("progress");
+    assert_eq!(id, 3);
+    assert_eq!(description, "buzz");
+    assert_eq!(done, false);
+    assert_eq!(progress, 25.0);
+    // TODO: check if created_at is the expected value.
     Ok(())
 }
 
