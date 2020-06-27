@@ -8,11 +8,15 @@
 //! `todos.yml`
 //! ```yml
 //! - id: 1
-//!   description: buy a new camera
-//!   done: 0
+//!   description: fizz
+//!   done: true
+//!   progress: 10.5
+//!   created_at: 2020/01/01 01:01:01
 //! - id: 2
-//!   description: meeting
-//!   done: 0
+//!   description: buzz
+//!   done: false
+//!   progress: 30.0
+//!   created_at: 2020/01/01 02:02:02
 //! ```
 //!
 //!  ```rust
@@ -47,7 +51,6 @@ mod fixture_file;
 mod helper;
 mod loader;
 mod mysql;
-// mod postgresql;
 
 // reexport key APIs
 pub use fixture_file::{FixtureFile, InsertSql, SqlParam};
@@ -55,5 +58,3 @@ pub use helper::Database;
 pub use loader::Loader;
 pub use mysql::helper::MySql;
 pub use mysql::loader::MySqlLoader;
-// pub use postgresql::helper::PostgreSql;
-// pub use postgres::loader::PgLoader;
