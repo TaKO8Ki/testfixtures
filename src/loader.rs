@@ -164,13 +164,19 @@ where
         let mut fixture_files: Vec<FixtureFile<Tz>> = vec![];
         for f in fs::read_dir(directory).unwrap() {
             let f = f.unwrap();
-            let fixture = FixtureFile {
-                path: f.path().to_str().unwrap().to_string(),
-                file_name: f.file_name().to_str().unwrap().to_string(),
-                content: File::open(f.path()).unwrap(),
-                insert_sqls: vec![],
+            let file_extension = match f.path().extension() {
+                Some(ext) => ext.to_str().unwrap().to_string(),
+                None => "".to_string(),
             };
-            fixture_files.push(fixture);
+            if !f.path().is_dir() && (file_extension == "yml" || file_extension == "yaml") {
+                let fixture = FixtureFile {
+                    path: f.path().to_str().unwrap().to_string(),
+                    file_name: f.file_name().to_str().unwrap().to_string(),
+                    content: File::open(f.path()).unwrap(),
+                    insert_sqls: vec![],
+                };
+                fixture_files.push(fixture);
+            }
         }
         fixture_files
     }
