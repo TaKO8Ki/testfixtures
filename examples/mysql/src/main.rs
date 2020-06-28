@@ -59,9 +59,7 @@ mod tests {
         .await?;
 
         // load your fixtures
-        if let Err(err) = loader.load().await {
-            panic!("{}", err)
-        }
+        loader.load().await.unwrap();
 
         assert_eq!(
             list_todos(&pool_for_query).await?,
