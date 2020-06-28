@@ -1,11 +1,11 @@
 # testfixtures
 
-[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![crates]](https://crates.io/crates/testfixtures) [![docs]](https://docs.rs/testfixtures) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE) [![download]](https://crates.io/crates/testfixtures)
+[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![crates]](https://crates.io/crates/testfixtures) [![docs]](https://docs.rs/testfixtures) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE) [![downloads]](https://crates.io/crates/testfixtures)
 
 [build]: https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master?logo=github
 [license]: https://img.shields.io/github/license/TaKO8Ki/testfixtures
 [docs]: https://img.shields.io/badge/docs.rs-testfixtures-8da0cb?labelColor=555555&logo=rust
-[download]: https://img.shields.io/crates/d/testfixtures
+[downloads]: https://img.shields.io/crates/d/testfixtures
 [crates]: https://img.shields.io/crates/v/testfixtures.svg?logo=rust
 
 testfixtures is a Rust library for preparing test data from yaml files.
