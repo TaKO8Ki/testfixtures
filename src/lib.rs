@@ -38,9 +38,8 @@
 //!         .await?;
 //!
 //!         // load your fixtures
-//!         if let Err(err) = loader.load().await {
-//!             panic!("{}", err)
-//!         }
+//!         loader.load().await.unwrap();
+//!
 //!         // run your tests
 //!         Ok(())
 //!     }
