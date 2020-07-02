@@ -35,7 +35,7 @@ chrono = "0.4.11"
 ## Usage
 
 Create fixture files like the following.
-Fixture files have to have the name `<table_name>.yml`.
+Fixture files should have the name `<table_name>.yml`.
 
 `todos.yml`
 ```yml
