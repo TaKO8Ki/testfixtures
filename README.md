@@ -211,5 +211,8 @@ $ direnv allow # https://github.com/direnv/direnv
 $ make test
 ```
 
+### Show your support
+Give a ⭐️ if this project helped you!
+
 ## Reference
 https://github.com/go-testfixtures/testfixtures
