@@ -1,14 +1,42 @@
-# testfixtures
+<h1 align="center">testfixtures</h1>
+<div align="center">
+ <strong>
+   testfixtures is a Rust library for preparing test data from yaml files.
+ </strong>
+</div>
 
-[![build]](https://github.com/TaKO8Ki/testfixtures/actions) [![crates]](https://crates.io/crates/testfixtures) [![docs]](https://docs.rs/testfixtures) [![license]](https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE) [![downloads]](https://crates.io/crates/testfixtures)
+<br />
 
-[build]: https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master?logo=github
-[license]: https://img.shields.io/github/license/TaKO8Ki/testfixtures
-[docs]: https://img.shields.io/badge/docs.rs-testfixtures-8da0cb?labelColor=555555&logo=rust
-[downloads]: https://img.shields.io/crates/d/testfixtures
-[crates]: https://img.shields.io/crates/v/testfixtures.svg?logo=rust
+<div align="center">
+    <a href="https://github.com/TaKO8Ki/testfixtures/actions">
+        <img src="https://img.shields.io/github/workflow/status/TaKO8Ki/testfixtures/CI/master?logo=github" />
+    </a>
+    <a href="https://crates.io/crates/testfixtures">
+        <img src="https://img.shields.io/crates/v/testfixtures.svg?logo=rust" />
+    </a>
+    <a href="https://docs.rs/testfixtures">
+        <img src="https://img.shields.io/badge/docs.rs-testfixtures-8da0cb?labelColor=555555&logo=rust" />
+    </a>
+    <a href="https://github.com/TaKO8Ki/testfixtures/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/TaKO8Ki/testfixtures" />
+    </a>
+</div>
 
-testfixtures is a Rust library for preparing test data from yaml files.
+<div align="center">
+  <h4>
+    <a href="#Usage">
+      Usage
+    </a>
+    <span> | </span>
+    <a href="https://docs.rs/testfixtures">
+      Docs
+    </a>
+    <span> | </span>
+    <a href="https://github.com/TaKO8Ki/testfixtures/tree/fix-readme/examples">
+      Examples
+    </a>
+  </h4>
+</div>
 
 ## Install
 
@@ -63,7 +91,7 @@ Fixture files should have the name `<table_name>.yml`.
 2020/01/01 01:01
 2020/01/01 01:01:01
 ```
-</div></details><br>
+</div></details>
 
 If you need to write raw SQL, probably to call a function, prefix the value of the column with RAW=.
 
@@ -210,6 +238,9 @@ $ direnv allow # https://github.com/direnv/direnv
 # run unit tests
 $ make test
 ```
+
+### Show your support
+Give a ⭐️ if this project helped you!
 
 ## Reference
 https://github.com/go-testfixtures/testfixtures
