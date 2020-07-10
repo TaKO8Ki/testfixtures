@@ -91,7 +91,7 @@ Fixture files should have the name `<table_name>.yml`.
 2020/01/01 01:01
 2020/01/01 01:01:01
 ```
-</div></details><br>
+</div></details>
 
 If you need to write raw SQL, probably to call a function, prefix the value of the column with RAW=.
 
