@@ -28,7 +28,7 @@
       Usage
     </a>
     <span> | </span>
-    <a href="#Docs">
+    <a href="https://docs.rs/testfixtures">
       Docs
     </a>
     <span> | </span>
